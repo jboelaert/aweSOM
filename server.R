@@ -1,0 +1,264 @@
+## 27/04/2016 : Shiny som sur iris - camemberts js
+
+library(kohonen)
+
+############################
+## Fonction qui génère les paramètres à passer à JS
+getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
+  
+  ## Paramètres communs à tous les graphiques
+  somsize <- nrow(som$grid$pts)
+  clustering <- factor(som$unit.classif, 1:nrow(som$grid$pts))
+  clust.table <- table(clustering)
+  
+  gridInfo <- list(nbLines= som$grid$xdim,
+                   nbColumns= som$grid$ydim,
+                   topology= ifelse(som$grid$topo == "rectangular", 
+                                    'rectangular', "hexagonal"))
+  superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
+  
+  ## Traitement data si besoin :
+  if (type == "Camembert") {
+    data <- as.factor(data)
+    unique.values <- levels(data)
+    nvalues <- nlevels(data)
+  } else if (type == "Radar") {
+    if (is.null(dim(data))) {
+      data <- data.frame(data)
+      colnames(data) <- varnames
+    }
+    nvar <- length(varnames)
+  }
+  
+  ## Paramètres spécifiques :
+  if (type == "Camembert") {
+    list(saveToPng= TRUE,
+         sizeInfo= plotsize, 
+         gridInfo= gridInfo, 
+         superclass= superclass, 
+         superclassColor= superclassColor, 
+         parts= nvalues, 
+         label= unique.values, 
+         labelColor= substr(rainbow(nvalues), 1, 7), 
+         pieNormalizedSize= unname(.9 * sqrt(clust.table) / sqrt(max(clust.table))), 
+         pieRealSize= unname(clust.table), 
+         pieNormalizedValues= unname(lapply(split(data, clustering), 
+                                            function(x) {
+                                              if (!length(x)) return(rep(1/nvalues, nvalues))
+                                              unname(table(x) / length(x))
+                                            })), 
+         pieRealValues= unname(lapply(split(data, clustering), 
+                                      function(x) unname(table(x)))))
+  } else if (type == "Radar") {
+    normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
+      
+    list(saveToPng= FALSE,
+         sizeInfo= plotsize, 
+         gridInfo= gridInfo, 
+         superclass= superclass, 
+         superclassColor= superclassColor, 
+         parts= nvar,
+         label= varnames,
+         labelColor= substr(rainbow(nvar), 1, 7),
+         radarNormalizedSize= unname(.9 * (clust.table > 0)),
+         radarRealSize= unname(clust.table),
+         radarNormalizedValues= unname(lapply(split(normDat, clustering), 
+                                              function(x) {
+                                                if (!nrow(x)) return(rep(0, nvar))
+                                                unname(colMeans(x))
+                                              })),
+         radarRealValues= unname(lapply(split(data, clustering), 
+                                        function(x) {
+                                          if (!nrow(x)) return(rep(0, nvar))
+                                          unname(round(colMeans(x), 3))
+                                        })))
+  } else if (type == "Hitmap") {
+    list(saveToPng= TRUE,
+         sizeInfo= plotsize, 
+         gridInfo= gridInfo, 
+         superclass= superclass, 
+         superclassColor= superclassColor, 
+         hitmapNormalizedValues= unname(.9 * sqrt(clust.table) / sqrt(max(clust.table))),
+         hitmapRealValues= unname(clust.table))
+  }
+}
+
+
+#########################
+## Fonction principale serveur
+shinyServer(function(input, output, session) {
+  
+  #############################################################################
+  ## Panel "Import Data"
+  #############################################################################
+
+  # Current train data
+  current.data <- reactive({
+    if (is.null(input$file1))
+      return(NULL)
+    
+    the.sep <- switch(input$sep, "Comma ','"=",", "Semicolon ';'"=";", 
+                      "Tab"="\t", "Space"=" ")
+    the.quote <- switch(input$quote, "None"="","Double Quote \""='"',
+                        "Single Quote '"="'")
+    the.dec <- switch(input$dec, "Period '.'"=".", "Comma ','"=",")
+    if (input$rownames) {
+      the.table <- read.table(input$file1$datapath, header=input$header, 
+                              sep=the.sep, quote=the.quote, row.names=1,
+                              dec=the.dec)
+    } else {
+      the.table <- read.table(input$file1$datapath, header=input$header, 
+                              sep=the.sep, quote=the.quote, dec=the.dec)
+    }
+    
+    the.table
+  })
+  
+  # data preview table
+  output$view <- renderTable({
+    d.input <- current.data()
+    if (is.null(d.input)) 
+      return(NULL)
+
+    if (!is.null(input$rownames.col) & input$rownames.col != "(None)") {
+      if (!any(duplicated(d.input[, input$rownames.col])))
+        try(row.names(d.input) <- as.character(d.input[, input$rownames.col]))
+    }
+    if (ncol(d.input)>input$ncol.preview) 
+      d.input <- d.input[,1:input$ncol.preview]
+    
+    head(d.input, n=input$nrow.preview) 
+  })
+
+  # Update choices for rownames column
+  output$rownames.col <- renderUI({
+    if (is.null(current.data())) return()
+    selectInput(inputId= "rownames.col", label= "Rownames var:", 
+                choices= c("(None)", colnames(current.data())),
+                selected= "(None)")
+  })
+  
+  ## Rownames of the current dataset
+  current.rownames <- reactive({
+    if (is.null(current.data()))
+      return(NULL)
+    if (input$rownames.col != "(None)")
+      if (!any(duplicated(current.data()[, input$rownames.col]))) 
+        return(as.character(current.data()[, input$rownames.col]))
+    return(1:nrow(current.data()))
+  })
+
+  #############################################################################
+  ## Panel "Train"
+  #############################################################################
+  
+  ## Message de statut / infos sur la carte
+  output$Message <- renderPrint({
+    if (is.null(current.som())) 
+      return(cat("No map trained yet, click Train button."))
+    
+    summary(current.som())
+    table(factor(current.som()$unit.classif, 
+                 levels= 1:nrow(current.som()$grid$pts)))
+  })
+  
+  # Update train variable choice on data change
+  output$varchoice <- renderUI({
+    if (is.null(current.data())) return()
+    checkboxGroupInput(inputId="varchoice", label="Training variables:",
+                       choices=as.list(colnames(current.data())),
+                       selected=as.list(colnames(current.data())[
+                         sapply(current.data(), class) %in%
+                           c("integer", "numeric")]))
+  })
+  # Update train variable choice on button click
+  observe({
+    input$varNum
+    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
+                             selected= isolate(as.list(colnames(current.data())[
+                               sapply(current.data(), class) %in% c("integer", "numeric")])))
+  })
+  observe({
+    input$varAll
+    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
+                             selected= isolate(as.list(colnames(current.data()))))
+  })
+  observe({
+    input$varNone
+    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
+                             selected= NA)
+  })
+  
+  # Train the SOM when the button is hit
+  current.som <- reactive({   
+    if (input$trainbutton > 0) {
+      isolate({
+        dat <- current.data()[, input$varchoice]
+        rownames(dat) <- current.rownames()
+        dat <- na.omit(dat)
+        som(scale(dat), grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
+      })
+    } else NULL
+  })
+  
+  # Compute superclasses when current.som or superclass changes
+  current.hclust <- reactive({
+    if(!is.null(current.som()))
+      hclust(dist(current.som()$codes), "ward.D2")
+  })
+  current.sc <- reactive({
+    if(!is.null(current.hclust()))
+      cutree(current.hclust(), input$kohSuperclass)
+  })
+  
+  
+  
+  #############################################################################
+  ## Panel "Graph"
+  #############################################################################
+  
+  ## Sélection de variables (en fonction du graphique)
+  output$plotVarOne <- renderUI({
+    if (is.null(current.data())) return()
+    selectInput("plotVarOne", "Plot variable:", choices= colnames(current.data()))
+  })
+  output$plotVarMult <- renderUI({
+    data <- current.data()
+    if (is.null(data)) return()
+    selectInput("plotVarMult", "Plot variable:", multiple= T,
+                choices= colnames(data)[sapply(data, is.numeric)], 
+                selected= colnames(data)[sapply(data, is.numeric)])
+  })
+    
+  ## Passer les données aux graphiques
+  output$thePie <- reactive({
+    if (is.null(current.som()) | input$graphType != "Camembert") 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    getPlotParams("Camembert", current.som(), current.sc(), 
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarOne], input$plotSize, input$plotVarOne)
+  })
+  
+  output$theRadar <- reactive({
+    if (is.null(current.som()) | input$graphType != "Radar" | is.null(input$plotVarMult)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Radar", current.som(), current.sc(), 
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarMult],
+                  input$plotSize, input$plotVarMult)
+  })
+
+  output$theHitmap <- reactive({
+    if (is.null(current.som()) )# | input$graphType != "Radar") 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Hitmap", current.som(), current.sc(), NULL, input$plotSize, NULL)
+  })
+  
+  output$screeplot <- renderPlot({
+    if (is.null(current.som())) return()
+    plot(current.hclust())
+    rect.hclust(current.hclust(), k= input$kohSuperclass)
+  })
+})

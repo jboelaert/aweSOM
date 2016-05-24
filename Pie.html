@@ -1,0 +1,361 @@
+<head>
+<style type="text/css">
+    .font-styles {
+		font-family: "Source Code Pro", Consolas, monaco, monospace;
+		font-size: 18px; 
+		line-height: 1.5; 
+		font-weight: 400; 
+	}
+
+	body{
+	  position: relative;
+	  font-family: "Source Code Pro", Consolas, monaco, monospace;
+	  font-size: 18px; 
+	  line-height: 1.5; 
+	  font-weight: 400; 
+	  color: #7AC143;
+	  background-color:  #eee;
+	  padding: 20px;
+	}
+
+	h4 {
+	  font-size: 18px;
+	}
+	
+</style>
+
+<header>
+  <h4 id="Pie-Info"></h4>
+</header>
+
+<a id="downloadPie"></a>
+<img id="fromcanvasPie" />
+
+<script>
+
+var histOutputBinding = new Shiny.OutputBinding();
+
+$.extend(histOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-Camembert');
+    },
+    renderValue: function(el, data) {
+		//remove the old graph
+		document.getElementById("thePie").innerHTML = "";
+		
+		if(data == null ) {return;}
+
+		var nbRows=data.gridInfo.nbLines;
+		var nbColumns=data.gridInfo.nbColumns;
+		var topology = data.gridInfo.topology;
+		var superclass = data.superclass;
+		var superclassColor = data.superclassColor;
+		var parts = data.parts;
+		var label = data.label;
+		var labelColor = data.labelColor;
+		var pieNormalizedSize = data.pieNormalizedSize;
+		var pieRealSize = data.pieRealSize;
+		var pieNormalizedValues = data.pieNormalizedValues;
+		var pieRealValues = data.pieRealValues;
+		var cellSize=data.sizeInfo;
+		var saveToPng=data.saveToPng;
+		var w = cellSize*nbColumns;
+		var h = cellSize*nbRows;
+
+		document.getElementById("Pie-Info").style.textAlign = "center";
+		
+		d3.select('#downloadPie').text(function () {return 'Download';});
+		
+		function downloadCanvas(link, filename) {
+			var division = document.getElementById("thePie");
+			var svg = division.children[0];
+			var img = document.getElementById("fromcanvasPie");
+			if(saveToPng){
+				svg.toDataURL("image/png", {
+					callback: function(data) {
+						link.href = data;
+						link.download = filename;
+					}
+				})
+			}else{
+				svg.toDataURL("image/svg+xml", {
+					callback: function(data) {
+						link.href = data;
+						link.download = filename;
+					}
+				})
+			}
+		}
+
+		document.getElementById('downloadPie').addEventListener('click', function() {
+			if(saveToPng){
+				downloadCanvas(this, 'Pie.png');
+			}else{
+				downloadCanvas(this, 'Pie.svg');
+			}
+		}, false);
+
+		if(topology.localeCompare('rectangular')==0){
+			d3.select('#Pie-Info').text(function () {return 'Square Grid : Pie';});
+			pieSquareGrid();
+		}else if(topology.localeCompare('hexagonal')==0){
+			d3.select('#Pie-Info').text(function () {return 'Hexagonal Grid : Pie';});
+			pieHexagonalGrid();
+		}	
+		
+		function pieSquareGrid(){
+			
+			var svg = d3.select('#thePie').append('svg')
+				.attr("style"," display:block; margin:auto; margin-top:30px;")
+				.attr({
+					width: w,
+					height: h
+				});
+  
+			_.times(nbRows, function(n) {
+				
+				var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+					.data(d3.range(nbColumns))
+					.enter().append('rect')
+					.attr({
+						class: function(d, i) {
+							return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+						},
+						id: function(d, i) {
+							return 's-' + (n + 1) + (i + 1);
+						},
+						width: cellSize,
+						height: cellSize,
+						x: function(d, i) {
+							return i * cellSize;
+						},
+						y: n * cellSize,
+						fill: function(d, i) {
+							var indice = superclass[(n*nbColumns)+i];
+							return superclassColor[indice-1];
+						},
+						stroke: '#FDBB30'
+					});
+
+				var array = d3.range(nbColumns);
+				var width = cellSize*50/100;
+				var height = cellSize*50/100;
+				var radius = Math.min(width, height) / 2;
+
+				svg.selectAll('rect' + ' .row-' + (n + 1))
+					 .data(d3.range(nbColumns))
+					 .append('g')
+							  
+				for (p = 0; p < array.length; p++) {   
+					var arc = d3.svg.arc().outerRadius(pieNormalizedSize[(n*nbColumns)+p]*(cellSize*50/100));
+					  
+					var innerArrayNormalizedValues = [];
+					innerArrayNormalizedValues= pieNormalizedValues[(n*nbColumns)+p];
+						
+					var innerArrayRealValues = [];
+					innerArrayRealValues= pieRealValues[(n*nbColumns)+p];
+						
+					var arrayValues = [];
+					for(var j=0; j<parts; j++){
+						arrayValues[j] = [];
+						arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+						arrayValues[j].realValue = innerArrayRealValues[j];
+					}
+						
+					var pie = d3.layout.pie()
+						.value(function(d) { return d.normalizedValue; })
+						.sort(null);
+						
+					var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
+						.data(pie(arrayValues))
+						.enter()
+						.append('path')
+						.attr('d', arc)
+						.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) + ',' + (n * cellSize + cellSize/2) + ')')
+						.attr('fill', function(d, i) { 
+							return labelColor[i];
+						});
+
+					rows.on('mouseover', function (d, i) {
+						var el = d3.select(this)
+							.transition()
+							.duration(10)		  
+							.style("fill-opacity", 0.8);
+									
+						d3.select('#Pie-Info').text(function () {
+							var v = (n*nbColumns)+i;
+							var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + pieRealSize[(n*nbColumns)+i];
+							return ch;
+						}); 
+					});
+
+					rows.on('mouseout', function (d, i) {
+						var el = d3.select(this)
+							.transition()
+							.duration(1000)
+							.style("fill-opacity", 1);
+					});
+							
+					pieParts.on('mouseenter', function (d, i) {
+						d3.select('#Pie-Info').text(function () { 
+								var ch=label[i]+": " + d.data.realValue;
+								return ch;	
+						}); 	
+									
+						d3.select(this)
+							.attr("stroke","white")
+							.transition()
+							.duration(50)
+							.attr("stroke-width",1);
+						});
+
+					pieParts.on('mouseleave', function (d, i) {
+						d3.select(this).transition()
+							.duration(50)
+							.attr("stroke","none");
+						});
+					}  
+			});
+		}
+		
+		
+		function pieHexagonalGrid(){
+			var margin = {
+				top: 30,
+				right: 20,
+				bottom: 20,
+				left: 50
+			};
+
+			var width = 850;
+			var height = 350;
+			var widtht = 850;
+			var heightt = 350;
+
+			var hexRadius=cellSize/2;	
+			var hexInRadius;	
+			
+
+			//Set the new height and width of the SVG based on the max possible
+			width = nbColumns*hexRadius*Math.sqrt(3);
+			height = nbRows*1.5*hexRadius+0.5*hexRadius;
+
+			//Set the hexagon radius
+			var hexbin = d3.hexbin().radius(hexRadius);
+				   
+			//Calculate the center positions of each hexagon	
+			var points = [];
+			for (var i = 0; i < nbRows; i++) {
+				for (var j = 0; j < nbColumns; j++) {
+					points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
+				}
+			}
+
+			var svg = d3.select("#thePie").append("svg")
+				.attr("width", width+hexRadius+5)
+				.attr("height", height)
+				.attr("style"," display:block; margin:auto; margin-top:30px;")
+				.append("g")
+				.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
+
+			var hexa = svg.selectAll(".hexagon")
+				.data(hexbin(points))
+				.enter().append("path")
+				.attr("class", "hexagon")
+				.attr("d", function (d) {
+					return "M" + d.x + "," + d.y + hexbin.hexagon();
+				})
+				.attr("stroke", function (d,i) {
+					return "#fff";
+				})
+				.attr("stroke-width", "1px")
+				.style("fill", function (d,i) {
+					var indice = superclass[i];
+					return superclassColor[indice-1];
+				});
+		
+			var array = d3.range(nbColumns);
+			var width = hexRadius;
+			var height = hexRadius;
+			var radius = Math.min(width, height)/ 2;
+
+			svg.selectAll(".hexagon").data(d3.range(nbColumns)).append('g')
+
+			var coordinatesArray = hexbin(points);
+		
+			for (var n = 0; n < nbRows*nbColumns; n++) {
+				
+				var arc = d3.svg.arc().outerRadius(pieNormalizedSize[n]*(cellSize*40/100));
+				
+				var innerArrayNormalizedValues = [];
+				innerArrayNormalizedValues= pieNormalizedValues[n];	
+				
+				var innerArrayRealValues = [];
+				innerArrayRealValues= pieRealValues[n];
+				var arrayValues = [];
+				
+				for(var j=0; j<parts; j++){
+					arrayValues[j] = [];
+					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+					arrayValues[j].realValue = innerArrayRealValues[j];
+				}
+
+				var pie = d3.layout.pie()
+					.value(function(d) { return d.normalizedValue; })
+					.sort(null);
+
+				var pieParts = svg.append("g")
+					.selectAll(".hexagon")
+					.data(pie(arrayValues))
+					.enter()
+					.append('path')
+					.attr("class", "pie")
+					.attr('d', arc)
+					.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
+					.attr('fill', function(d, i) {
+						return labelColor[i];
+					})	
+					
+				hexa.on('mouseover', function (d, i) {
+					var el = d3.select(this)
+						.transition()
+						.duration(10)		  
+						.style("fill-opacity", 0.8);
+									
+					d3.select('#Pie-Info').text(function () {
+						var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + pieRealSize[i];
+						return ch;
+					}); 
+				});
+
+				hexa.on('mouseout', function (d, i) {
+					var el = d3.select(this)
+						.transition()
+						.duration(1000)
+						.style("fill-opacity", 1);
+					});
+							
+				pieParts.on('mouseenter', function (d, i) {
+					d3.select('#Pie-Info').text(function () { 
+						var ch=label[i]+": " + d.data.realValue;
+						return ch;	
+					}); 	
+									
+					d3.select(this)
+						.attr("stroke","white")
+						.transition()
+						.duration(50)
+						.attr("stroke-width",1);
+				});
+
+				pieParts.on('mouseleave', function (d, i) {
+					d3.select(this).transition()
+						.duration(50)
+						.attr("stroke","none");
+				});
+			}		
+		}
+	}
+});
+Shiny.outputBindings.register(histOutputBinding, 'just.testing');			
+</script>
