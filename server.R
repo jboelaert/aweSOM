@@ -126,7 +126,7 @@ shinyServer(function(input, output, session) {
   #############################################################################
 
   # Current train data
-  current.data <- reactive({
+  ok.data <- reactive({
     if (is.null(input$file1))
       return(NULL)
     
@@ -149,7 +149,7 @@ shinyServer(function(input, output, session) {
   
   # data preview table
   output$view <- renderTable({
-    d.input <- current.data()
+    d.input <- ok.data()
     if (is.null(d.input)) 
       return(NULL)
 
@@ -166,56 +166,46 @@ shinyServer(function(input, output, session) {
 
   # Update choices for rownames column
   output$rownames.col <- renderUI({
-    if (is.null(current.data())) return()
+    if (is.null(ok.data())) return()
     selectInput(inputId= "rownames.col", label= "Rownames var:", 
-                choices= c("(None)", colnames(current.data())),
+                choices= c("(None)", colnames(ok.data())),
                 selected= "(None)")
   })
   
   ## Current rownames
-  current.rownames <- reactive({
-    if (is.null(current.data()))
+  ok.rownames <- reactive({
+    if (is.null(ok.data()))
       return(NULL)
     if (input$rownames.col != "(None)")
-      if (!any(duplicated(current.data()[, input$rownames.col]))) 
-        return(as.character(current.data()[, input$rownames.col]))
-    return(rownames(current.data()))
+      if (!any(duplicated(ok.data()[, input$rownames.col]))) 
+        return(as.character(ok.data()[, input$rownames.col]))
+    return(rownames(ok.data()))
   })
 
   #############################################################################
   ## Panel "Train"
   #############################################################################
   
-  ## Message de statut / infos sur la carte
-  output$Message <- renderPrint({
-    if (is.null(current.som())) 
-      return(cat("No map trained yet, click Train button."))
-    
-    summary(current.som())
-    table(factor(current.som()$unit.classif, 
-                 levels= 1:nrow(current.som()$grid$pts)))
-  })
-  
   # Update train variable choice on data change
   output$varchoice <- renderUI({
-    if (is.null(current.data())) return()
+    if (is.null(ok.data())) return()
     checkboxGroupInput(inputId="varchoice", label="Training variables:",
-                       choices=as.list(colnames(current.data())),
-                       selected=as.list(colnames(current.data())[
-                         sapply(current.data(), class) %in%
+                       choices=as.list(colnames(ok.data())),
+                       selected=as.list(colnames(ok.data())[
+                         sapply(ok.data(), class) %in%
                            c("integer", "numeric")]))
   })
   # Update train variable choice on button click
   observe({
     input$varNum
     updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
-                             selected= isolate(as.list(colnames(current.data())[
-                               sapply(current.data(), class) %in% c("integer", "numeric")])))
+                             selected= isolate(as.list(colnames(ok.data())[
+                               sapply(ok.data(), class) %in% c("integer", "numeric")])))
   })
   observe({
     input$varAll
     updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
-                             selected= isolate(as.list(colnames(current.data()))))
+                             selected= isolate(as.list(colnames(ok.data()))))
   })
   observe({
     input$varNone
@@ -224,38 +214,65 @@ shinyServer(function(input, output, session) {
   })
   
   ## Train the SOM when the button is hit
-  current.som <- reactive({   
+  ok.som <- reactive({   
     if (input$trainbutton > 0) {
       isolate({
-        dat <- current.data()[, input$varchoice]
-        rownames(dat) <- current.rownames()
+        dat <- ok.data()[, input$varchoice]
+        msg <- NULL
+        num.cols <- sapply(dat[, input$varchoice], is.numeric)
+        if (any(!num.cols)) {
+          msg <- paste0("Variables < ", 
+                        ifelse(sum(!num.cols) == 1, input$varchoice[!num.cols], 
+                               paste(input$varchoice[!num.cols], collape= ", ")), 
+                        " > are not natively numeric, and will be forced to numeric.", 
+                        " (This is probably a bad idea.)")
+          dat[, input$varchoice] <- as.data.frame(sapply(dat[, input$varchoice], as.numeric))
+        }
+        rownames(dat) <- ok.rownames()
         dat <- na.omit(dat)
-        som(scale(dat), grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
+        res <- som(scale(dat), grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
+        res$msg <- msg
+        res
       })
-    } else NULL
+    } 
   })
   
-  ## Compute superclasses when current.som or superclass changes
-  current.hclust <- reactive({
-    if(!is.null(current.som()))
-      hclust(dist(current.som()$codes), "ward.D2")
+  ## Compute superclasses when ok.som or superclass changes
+  ok.hclust <- reactive({
+    if(!is.null(ok.som()))
+      hclust(dist(ok.som()$codes), "ward.D2")
   })
-  current.sc <- reactive({
-    if(!is.null(current.hclust()))
-      cutree(current.hclust(), input$kohSuperclass)
+  ok.sc <- reactive({
+    if(!is.null(ok.hclust()))
+      cutree(ok.hclust(), input$kohSuperclass)
   })
   
   ## Current training vars
-  current.trainvars <- reactive({
-    if(!is.null(current.som()))
+  ok.trainvars <- reactive({
+    if(!is.null(ok.som()))
       isolate(input$varchoice)
   })
   ## Current training rows (no NA)
-  current.trainrows <- reactive({
-    if(!is.null(current.som()))
-      rowSums(is.na(current.data()[, isolate(input$varchoice)])) == 0
+  ok.trainrows <- reactive({
+    if(!is.null(ok.som()))
+      rowSums(is.na(ok.data()[, isolate(input$varchoice)])) == 0
   })
   
+  ## Training message
+  output$Message <- renderPrint({
+    if (is.null(ok.som())) 
+      return(cat("No map trained yet, click Train button."))
+    
+    if (!is.null(ok.som()$msg)) {
+      cat("******************\nWarning:\n******************\n", 
+          ok.som()$msg, "\n\n")
+    }
+    cat("## SOM summary:\n")
+    summary(ok.som())
+    cat("\n## Number of obs. per map cell:")
+    table(factor(ok.som()$unit.classif, 
+                 levels= 1:nrow(ok.som()$grid$pts)))
+  })
   
   
   #############################################################################
@@ -264,11 +281,11 @@ shinyServer(function(input, output, session) {
   
   ## Sélection de variables (en fonction du graphique)
   output$plotVarOne <- renderUI({
-    if (is.null(current.data())) return()
-    selectInput("plotVarOne", "Plot variable:", choices= colnames(current.data()))
+    if (is.null(ok.data())) return()
+    selectInput("plotVarOne", "Plot variable:", choices= colnames(ok.data()))
   })
   output$plotVarMult <- renderUI({
-    data <- current.data()
+    data <- ok.data()
     if (is.null(data)) return()
     tmp.numeric <- sapply(data, is.numeric)
     selectInput("plotVarMult", "Plot variable:", multiple= T,
@@ -278,14 +295,14 @@ shinyServer(function(input, output, session) {
     
   ## Scree plot
   output$screeplot <- renderPlot({
-    if (is.null(current.som())) return()
-    plot(current.hclust())
-    rect.hclust(current.hclust(), k= input$kohSuperclass)
+    if (is.null(ok.som())) return()
+    plot(ok.hclust())
+    rect.hclust(ok.hclust(), k= input$kohSuperclass)
   })
   
   ## Fancy JS Plots
   output$thePlot <- reactive({
-    if (is.null(current.som()) | !(input$graphType %in% c("Radar", "Camembert",
+    if (is.null(ok.som()) | !(input$graphType %in% c("Radar", "Camembert",
                                                           "Barplot", "Boxplot", 
                                                           "Color", "Star", 
                                                           "Hitmap", "Line", 
@@ -296,20 +313,20 @@ shinyServer(function(input, output, session) {
     if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot", "Line")) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
-      data <- current.data()[current.trainrows(), plotVar]
+      data <- ok.data()[ok.trainrows(), plotVar]
     } else if (input$graphType %in% c("Color", "Camembert")) {
       if (is.null(input$plotVarOne)) return()
       plotVar <- input$plotVarOne
-      data <- current.data()[current.trainrows(), plotVar]
+      data <- ok.data()[ok.trainrows(), plotVar]
     } else if (input$graphType %in% c("Hitmap")) {
       plotVar <- NULL
       data <- NULL
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
-      data <- current.rownames()[current.trainrows()]
+      data <- ok.rownames()[ok.trainrows()]
     }
     
-    getPlotParams(input$graphType, current.som(), current.sc(), 
+    getPlotParams(input$graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar)
   })    
 })
