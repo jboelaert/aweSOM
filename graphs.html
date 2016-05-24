@@ -80,9 +80,26 @@ $.extend(histOutputBinding, {
       var activate = data.activate;
       var colorNormalizedValues = data.colorNormalizedValues;
     	var colorRealValues = data.colorRealValues;
+    } else if(plotType.localeCompare("Star")==0) {
+      // Star
+      var nbSommet = data.nbSommet;
+      var label = data.label;
+    	var starPlotNormalizedValues = data.starPlotNormalizedValues;
+    	var starPlotRealValues = data.starPlotRealValues;
+    } else if(plotType.localeCompare("Hitmap")==0) {
+      // Hitmap
+      var hitmapNormalizedValues = data.hitmapNormalizedValues;
+      var hitmapRealValues = data.hitmapRealValues;
+    } else if(plotType.localeCompare("Line")==0) {
+      // Lines
+      var nbPoints = data.nbPoints;
+      var lineNormalizedValues = data.lineNormalizedValues;
+    	var lineRealValues = data.lineRealValues;
+    } else if(plotType.localeCompare("Names")==0) {
+      // Wordcloud of names
+      var nbWord = data.nbWord;
+      var wordClouds = data.wordClouds;
     }
-
-
     
     // Plot download handler
     function downloadCanvas(link, filename) {
@@ -138,14 +155,14 @@ $.extend(histOutputBinding, {
       .attr("style"," display:block; margin:auto; margin-top:30px")
       .attr({width: w, height: h});
       
-      ////////////////////////////////////////////////////////////////////////
-      // Square color plot
-      ////////////////////////////////////////////////////////////////////////
-      if (plotType.localeCompare("Color")==0) {
-    	_.times(nbRows, function(n) {	
-  			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
-  				.data(d3.range(nbColumns))
-  				.enter().append("g");
+      if(plotType.localeCompare("Color")==0) {
+        ////////////////////////////////////////////////////////////////////////
+        // Square color plot
+        ////////////////////////////////////////////////////////////////////////
+      	_.times(nbRows, function(n) {	
+    			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+    				.data(d3.range(nbColumns))
+    				.enter().append("g");
         
           rows.append('rect')
     			.attr({
@@ -187,13 +204,207 @@ $.extend(histOutputBinding, {
       				var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' +  'value: ' + colorRealValues[(n*nbColumns)+i];
       				return ch;
       				}); 
-      		});
-      		rows.on('mouseout', function (d, i) {
-      			var el = d3.select(this)
-      				.transition()
-      				.duration(1000)
-      				.style("fill-opacity", 1);
-      		});
+        		});
+        		rows.on('mouseout', function (d, i) {
+        			var el = d3.select(this)
+        				.transition()
+        				.duration(1000)
+        				.style("fill-opacity", 1);
+        		});
+        	});
+      } else if(plotType.localeCompare("Hitmap")==0) {
+        //////////////////////////////////////////////////////////////////////
+        // Square Hitmap
+        //////////////////////////////////////////////////////////////////////
+      	_.times(nbRows, function(n) {
+    			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+    				.data(d3.range(nbColumns))
+    				.enter().append('rect')
+    				.attr({
+    					class: function(d, i) {
+    						return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+    					},
+    					id: function(d, i) {
+    						return 's-' + (n + 1) + (i + 1);
+    					},
+    					width: cellSize,
+    					height: cellSize,
+    					x: function(d, i) {
+    						return i * cellSize;
+    					},
+    					y: n * cellSize,
+    					fill: function(d, i) {
+    						var indice = superclass[(n*nbColumns)+i];
+    						return superclassColor[indice-1];
+    					},
+    					stroke: '#FDBB30'
+    				});
+    			var inside = svg.selectAll('rect' + ' .row-' + (n + 1))
+    				.data(d3.range(nbColumns))
+    				.enter().append('rect')
+    				.attr("class", "squareIn")
+    				.attr({
+    				  class: function(d, i) {
+    					return 'row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+    				  },
+    				  id: function(d, i) {
+    					return 's-' + (n + 1) + (i + 1);
+    				  },
+    				  width: function(d, i) {
+    					return hitmapNormalizedValues[(n*nbColumns)+i]*cellSize*0.97;
+    				  },
+    				  height: function(d, i) {
+    					return hitmapNormalizedValues[(n*nbColumns)+i]*cellSize;
+    				  },
+    				  x: function(d, i) {
+    					return (i * cellSize + cellSize/2 - (hitmapNormalizedValues[(n*nbColumns)+i]*cellSize)*0.97/2);
+    				  },
+    				  y: function(d, i) {
+    					return (n * cellSize + cellSize/2 - (hitmapNormalizedValues[(n*nbColumns)+i]*cellSize)*0.97/2);
+    				  },
+    				  fill: '#112E45',
+    				  });
+    			
+    			rows.on('mouseover', function (d, i) {
+    				var el = d3.select(this)
+    					.transition()
+    					.duration(10)		  
+    					.style("fill-opacity", 0.8);
+    								
+    				d3.select('#plot-message').text(function () {
+    					var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i] + ' | ' +  'value: ' + hitmapRealValues[(n*nbColumns)+i];
+    					return ch;
+    					}); 
+    			});
+    
+    			rows.on('mouseout', function (d, i) {
+    				var el = d3.select(this)
+    					.transition()
+    					.duration(1000)
+    					.style("fill-opacity", 1);
+    			});
+    		});
+    
+      } else if (plotType.localeCompare("Line")==0) {
+        //////////////////////////////////////////////////////////////////////
+        // Square Lines
+        //////////////////////////////////////////////////////////////////////
+      	_.times(nbRows, function(n) {
+    			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+    				.data(d3.range(nbColumns))
+    				.enter().append('rect')
+    				.attr({
+    					class: function(d, i) {
+    						return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+    					},
+    					id: function(d, i) {
+    						return 's-' + (n + 1) + (i + 1);
+    					},
+    					width: cellSize,
+    					height: cellSize,
+    					x: function(d, i) {
+    						return i * cellSize;
+    					},
+    					y: n * cellSize,
+    					fill: function(d, i) {
+    						var indice = superclass[(n*nbColumns)+i];
+    						return superclassColor[indice-1];
+    					},
+    					stroke: '#FDBB30'
+    				});
+    			var points = svg.selectAll('rect' + ' .row-' + (n + 1))
+    				.data(d3.range(nbColumns))
+    				.enter()
+    				.append("path")
+    				.attr("class", "ligne")
+    				.attr("d", function(d, i) { 
+    					innerArrayNormalizedValues= lineNormalizedValues[(n*nbColumns)+i];				
+    					innerArrayRealValues= lineRealValues[(n*nbColumns)+i];
+    				
+    					var arrayValues = [];
+    					for(var j=0; j<nbPoints; j++){
+    						arrayValues[j] = [];
+    						arrayValues[j].px = cellSize*10/100+j*((cellSize-(cellSize*20/100))/(nbPoints-1));
+    						arrayValues[j].py = innerArrayNormalizedValues[j]*cellSize;
+    						arrayValues[j].realValue = innerArrayRealValues[j];
+    					}
+    					
+    					var lineFunction = d3.svg.line()
+                            .x(function(d) { return d.px+i*cellSize; })
+                            .y(function(d) { return -d.py+(n+1)*cellSize; })
+                            .interpolate("linear");
+    								  
+    					return lineFunction(arrayValues);
+    				})
+    				.attr("stroke", function(d) { 
+    					return "#112E45"; 
+    				})
+    				.attr("stroke-width", 1.2)
+    				.attr("fill", "none");
+    				
+    			var focus = points.select("path.ligne")
+    				.data(d3.range(nbColumns))
+    				.enter()
+    				.append("circle")
+    				.attr("class", function(d, i) { 
+    					return "y"+(n*nbColumns+i);
+    				})
+    				.attr("cx", function(d, i) {
+    					var px = cellSize*10/100+i*cellSize;	
+    					return px;
+    				})
+    				.attr("cy", function(d, i) {
+    					innerArrayNormalizedValues= lineNormalizedValues[(n*nbColumns)+i];	
+    					var py = (-innerArrayNormalizedValues[0]*cellSize)+(n+1)*cellSize;
+    					return py;
+    				})
+    				.attr("r", 4)
+    				.style("fill", "none")
+    				.style("stroke", "#112E45");
+    			
+    			rows.on('mousemove', function (d, i) {	
+    				console.log(i);
+    				for(var k=0; k<nbRows; k++){
+    					for(var l=0; l<nbColumns; l++){
+    						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
+    						innerArrayRealValues= lineRealValues[(k*nbColumns)+l];
+    						
+    						var arrayValues = [];
+    						for(var j=0; j<nbPoints; j++){
+    							arrayValues[j] = [];
+    							arrayValues[j].px = cellSize*10/100+j*((cellSize-(cellSize*20/100))/(nbPoints-1))+l*cellSize;
+    							arrayValues[j].py = -(innerArrayNormalizedValues[j]*cellSize)+(k+1)*cellSize;
+    							arrayValues[j].realValue = innerArrayRealValues[j];
+    						}
+    						
+    						var bisectPoints = d3.bisector(function(d) { return d.px; }).left;
+    						var x = d3.time.scale().range([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+    						x.domain([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+    						
+    						var additionalX = (l-i)*cellSize;
+    						
+    						var x0 = x.invert(d3.mouse(this)[0]+additionalX),
+    							p = bisectPoints(arrayValues, x0, 1),
+    							d0 = arrayValues[p - 1],
+    							d1 = arrayValues[p];
+    							if(p<nbColumns){
+    								d = x0 - d0.px > d1.px - x0 ? d1 : d0;
+    							}
+    							d = d0;
+                  
+    						svg.select("circle.y"+(k*nbColumns+l))
+    							.attr("transform", "translate(" + (d.px-cellSize*10/100-l*cellSize)+ "," + (d.py-arrayValues[0].py) + ")");
+    
+    						if(l==i && k==n){
+    							d3.select('#plot-message').text(function () {
+    								var pointValue = d == d0 ? arrayValues[p-1].realValue : arrayValues[p].realValue
+    								var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse: ' + superclass[(n*nbColumns)+i] + ' | ' + 'pointValue: ' + pointValue;
+    								return ch;
+    							});
+    						}
+    					}
+    				}
+    			});
       	});
       } else {
         //////////////////////////////////////////////////////////////////////
@@ -225,6 +436,7 @@ $.extend(histOutputBinding, {
     				stroke: '#FDBB30'
     			});
 
+      		var array = d3.range(nbColumns);
           svg.selectAll('rect' + ' .row-' + (n + 1))
           .data(d3.range(nbColumns))
     			.append('g')
@@ -618,11 +830,113 @@ $.extend(histOutputBinding, {
       						.attr("stroke-width",1);
       				});
       			}
-          } else if(plotType.localeCompare("Color")==0) {
-            //////////////////////////////////////////////////////////////////////
-            // Square Color
-            ///////////////////////////////////////////////////////////////////////
-            
+          } else if(plotType.localeCompare("Star")==0) {
+            ////////////////////////////////////////////////////////////////////
+            // Square Star
+            ////////////////////////////////////////////////////////////////////
+  		      var array = d3.range(nbColumns);
+        		for (p = 0; p < array.length; p++) {   
+      				var innerArrayNormalizedValues= starPlotNormalizedValues[(n*nbColumns)+p];	
+      				var innerArrayRealValues= starPlotRealValues[(n*nbColumns)+p];	
+      				var arrayValues = new Array(1);
+      				arrayValues[0] = new Array(nbSommet);
+      				for(var j=0; j<nbSommet; j++){
+      					arrayValues[0][j] = {axis: label[j], value: innerArrayNormalizedValues[j], realValue: innerArrayRealValues[j]};
+      				}
+      				// Dimension of the graph
+      				var w = cellSize*80/100,
+      					h = cellSize*80/100;
+      				//Options for the Radar chart, other than default
+      				var mycfg = {
+      					w: w,
+      					h: h,
+      					levels: 6,
+      					ExtraWidthX: cellSize,
+      					radius: cellSize*5/100,
+      					x: (p * cellSize)+cellSize*10/100,
+      					y: (n * cellSize)+cellSize*10/100.
+      				}
+      				//Call function to draw the Radar chart
+      				//Will expect that data is in %'s
+      				RadarChart.draw("#thePlot", arrayValues, mycfg);
+      				
+      				rows.on('mouseover', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(10)		  
+      					.style("fill-opacity", 0.8);
+      				d3.select('#plot-message').text(function () {
+      					var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
+      					return ch;
+      					}); 
+      				});
+      				rows.on('mouseout', function (d, i) {
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(1000)
+      						.style("fill-opacity", 1);
+      				});
+      			}            
+          } else if(plotType.localeCompare("Names")==0) {
+            ////////////////////////////////////////////////////////////////////
+            // Square names wordcloud
+            ////////////////////////////////////////////////////////////////////
+      			function draw(words) {
+    					svg.selectAll('rect' + ' .row-' + (n + 1))
+    						.data(words)
+    						.enter()
+    						.append("g")
+    						.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) + ',' + (n * cellSize + cellSize/2 ) + ')')
+    						.append("text")
+    						.style("font-size", function(d) { return d.size + "px"; })
+    						.style("fill", function(d) { return "#112E45"; })
+    						.attr("text-anchor", "middle")
+    						.attr("transform", function(d) {
+    							return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+    						})
+    						.text(function(d) { return d.text; });
+    				}
+
+        		for (p = 0; p < array.length; p++) {   
+      				var innerArrayWordClouds= wordClouds[(n*nbColumns)+p];	
+      				var nbWordInnerArray = 	nbWord[(n*nbColumns)+p];
+      				var arrayValues = [];
+      				var wordWithMaxLetters=0;
+      				for(var j=0; j<nbWordInnerArray; j++){
+      					arrayValues[j] = [];
+      					arrayValues[j] = innerArrayWordClouds[j];
+      					if(arrayValues[j].length>wordWithMaxLetters){
+      						wordWithMaxLetters=arrayValues[j].length;
+      					}
+      				}
+      				
+      				d3.layout.cloud().size([cellSize, cellSize]) // => ici l'intervale est tres important car il joue sur l'apparence des mots !
+      					.words(arrayValues.map(function(d) {
+      						return {text: d, size: (cellSize/wordWithMaxLetters) };
+      					}))
+      					.rotate(function() { return ~~(Math.random() * 1) * 90; })
+      					.fontSize(function(d) { return d.size; })
+      					.on("end", draw)
+      					.start();
+      				
+      				rows.on('mouseover', function (d, i) {
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(10)		  
+      						.style("fill-opacity", 0.8);
+      									
+      					d3.select('#plot-message').text(function () {
+      						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1);
+      						return ch;
+      					}); 
+      				});
+      				rows.on('mouseout', function (d, i) {
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(1000)
+      						.style("fill-opacity", 1);
+      				});
+      			}
           }
         });
       }
@@ -717,6 +1031,59 @@ $.extend(histOutputBinding, {
     				.duration(1000)
     				.style("fill-opacity", 1);
     		});			
+      } if (plotType.localeCompare("Hitmap")==0) {
+        ////////////////////////////////////////////////////////////////////////
+        // Hexagonal Hitmap
+        ////////////////////////////////////////////////////////////////////////
+      	var hexa = svg.selectAll(".hexagon")
+    			.data(hexbin(points))
+    			.enter().append("path")
+    			.attr("class", "hexagon")
+    			.attr("d", function (d) {
+    				return "M" + d.x + "," + d.y + hexbin.hexagon();
+    			})
+    			.attr("stroke", function (d,i) {
+    				return "#fff";
+    			})
+    			.attr("stroke-width", "1px")
+    			.style("fill", function (d,i) {
+    				var indice = superclass[i];
+    				return superclassColor[indice-1];
+    			});
+    	
+    		var i=0;
+    		svg.append("g")
+    			.selectAll(".hexagon")
+    			.data(hexbin(points))
+    			.enter()
+    			.append("path")	
+    			.attr("class", "InnerHexagon")
+    			.attr("d", function (d) {
+    				hexInRadius = (hitmapNormalizedValues[i]*cellSize)/2;
+    				i++;
+    				hexbint = d3.hexbin().radius(hexInRadius);
+    			   
+    				return "M" + d.x + "," + d.y + hexbint.hexagon();
+    			})
+    			.style("fill", function (d,i) {
+    				return "#112E45";
+    			})
+    		hexa.on('mouseover', function (d, i) {
+    			var el = d3.select(this)
+    				.transition()
+    				.duration(10)		  
+    				.style("fill-opacity", 0.8);
+    			d3.select('#plot-message').text(function () {
+    				var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' +  parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[i] + ' | ' +  'value: ' + hitmapRealValues[i];
+    				return ch;
+    			}); 
+    		});
+    		hexa.on('mouseout', function (d, i) {
+    			var el = d3.select(this)
+    				.transition()
+    				.duration(1000)
+    				.style("fill-opacity", 1);
+    		});	
       } else {
         ////////////////////////////////////////////////////////////////////////
         // Other hexagonal plots
@@ -1123,8 +1490,221 @@ $.extend(histOutputBinding, {
       					.attr("stroke-width",1);
       			});			
       		}
+        } else if(plotType.localeCompare("Star")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Star
+          //////////////////////////////////////////////////////////////////////////    
+          
+        	for (p = 0; p < nbRows*nbColumns; p++) {
+      				
+      			var innerArrayNormalizedValues= starPlotNormalizedValues[p];	
+      			var innerArrayRealValues= starPlotRealValues[p];	
+      				
+      			var arrayValues = new Array(1);
+      			arrayValues[0] = new Array(nbSommet);
+      			for(var j=0; j<nbSommet; j++){
+      				arrayValues[0][j] = {axis: label[j], value: innerArrayNormalizedValues[j], realValue: innerArrayRealValues[j]};
+      			}
+      				
+      			// Dimension of the graph
+      			var w = cellSize*70/100,
+      				h = cellSize*70/100;
+      					
+      			//Options for the Radar chart, other than default
+      			var mycfg = {
+      				w: w,
+      				h: h,
+      				levels: 6,
+      				ExtraWidthX: cellSize,
+      				radius: cellSize*5/100,
+      				x: coordinatesArray[p].x+cellSize*15/100,
+      				y: coordinatesArray[p].y+cellSize*15/100
+      			}
+      
+      			//Call function to draw the Radar chart
+      			//Will expect that data is in %'s
+      			RadarChart.draw("#thePlot", arrayValues, mycfg);
+      			
+      			hexa.on('mouseover', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(10)		  
+      					.style("fill-opacity", 0.8);
+      								
+      				d3.select('#plot-message').text(function () {
+      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[i];
+      					return ch;
+      					}); 
+      			});
+      
+      			hexa.on('mouseout', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(1000)
+      					.style("fill-opacity", 1);
+      			});
+      		}          
+        } else if(plotType.localeCompare("Line")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Line
+          //////////////////////////////////////////////////////////////////////////    
+        	for (var indice = 0; indice < nbRows*nbColumns; indice++) {
+      			innerArrayNormalizedValues= lineNormalizedValues[indice];				
+      			innerArrayRealValues= lineRealValues[indice];
+      			var arrayValues = [];
+      			for(var j=0; j<nbPoints; j++){
+      				arrayValues[j] = [];
+      				arrayValues[j].px = cellSize*20/100+j*((cellSize-(cellSize*40/100))/(nbPoints-1));
+      				arrayValues[j].py = innerArrayNormalizedValues[j]*cellSize*0.5;
+      				arrayValues[j].realValue = innerArrayRealValues[j];
+      			}
+      			var points = svg.append("g").selectAll(".hexagon")
+      				.data(d3.range(1))
+      				.enter()
+      				.append("path")
+      				.attr("class", "ligne")
+      				.attr("d", function(d, i) { 				
+      					var lineFunction = d3.svg.line()
+      						.x(function(d) { return d.px; })
+      						.y(function(d) { return -d.py;})
+      						.interpolate("linear");
+      					return lineFunction(arrayValues);
+      				})
+      				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y+cellSize*25/100) + ')')
+      				.attr("stroke", function(d) { 
+      					return "#112E45"; 
+      				})
+      				.attr("stroke-width", 1.2)
+      				.attr("fill", "none");
+              
+      			var focus = points.select("path.ligne")
+      				.data(d3.range(1))
+      				.enter()
+      				.append("circle")
+      				.attr("class", function(d, i) { 
+      					return "y"+(indice);
+      				})
+      				.attr("cx", function(d, i) {
+      					var px = cellSize*20/100+i*cellSize;	
+      					return px;
+      				})
+      				.attr("cy", function(d, i) {
+      					innerArrayNormalizedValues= lineNormalizedValues[indice];	
+      					var py = (-innerArrayNormalizedValues[0]*cellSize)*0.5;
+      					return py;
+      				})
+      				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y+cellSize*25/100) + ')')
+      				.attr("r", 4)
+      				.style("fill", "none")
+      				.style("stroke", "#112E45");
+      			
+      			hexa.on('mousemove', function (d, i) {
+      				for(var k=0; k<nbRows; k++){
+      					for(var l=0; l<nbColumns; l++){
+      						var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
+      						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
+      						innerArrayRealValues= lineRealValues[(k*nbColumns)+l];
+      						
+      						var arrayValues = [];
+      						for(var j=0; j<nbPoints; j++){
+      							arrayValues[j] = [];
+      							arrayValues[j].px = cellSize*20/100+j*((cellSize-(cellSize*40/100))/(nbPoints-1))+coordinatesArray[(k*nbColumns)+l].x-cellSize/2;
+      							arrayValues[j].py = -(innerArrayNormalizedValues[j]*cellSize*0.5)+coordinatesArray[(k*nbColumns)+l].y+cellSize*25/100;
+      							arrayValues[j].realValue = innerArrayRealValues[j];
+      						}
+      						
+      						var bisectPoints = d3.bisector(function(d) { return d.px; }).left;
+      						var x = d3.time.scale().range([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+      						x.domain([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+      						
+      						var additionalX = coordinatesArray[(k*nbColumns)+l].x - coordinatesArray[indice].x;
+      
+      						var x0 = x.invert(d3.mouse(this)[0] + additionalX),
+      							p = bisectPoints(arrayValues, x0, 1),
+      							d0 = arrayValues[p - 1],
+      							d1 = arrayValues[p];
+      							if(p<nbColumns){
+      								d = x0 - d0.px > d1.px - x0 ? d1 : d0;
+      							}
+      							d = d0;
+      
+      						svg.select("circle.y"+((k*nbColumns)+l))
+      							.attr("transform", "translate(" + (d.px-cellSize*20/100) + "," + (d.py-arrayValues[0].py+(cellSize-cellSize*75/100)+k*cellSize*75/100) + ")");	
+      						
+      						if(l==parseInt((i%nbRows),10) && k==parseInt((i/nbRows),10)){
+      							d3.select('#plot-message').text(function () {
+      								var pointValue = d == d0 ? arrayValues[p-1].realValue : arrayValues[p].realValue;
+      								var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse: ' + superclass[indice] + ' | ' + 'pointValue: ' + pointValue;
+      								return ch;
+      							});
+      						}
+      					}
+      				}
+      			});
+      		}
+        } else if (plotType.localeCompare("Names")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Wordcloud of Names
+          //////////////////////////////////////////////////////////////////////////
+      		function draw(words) {
+    				svg.append("g").selectAll(".hexagon")
+    					.data(words)
+    					.enter()
+    					.append("g")
+    					.attr('transform', 'translate(' + (coordinatesArray[p].x) + ',' + (coordinatesArray[p].y) + ')')
+    					.append("text")
+    					.style("font-size", function(d) { return d.size + "px"; })
+    					.style("fill", function(d) { return "#112E45"; })
+    					.attr("text-anchor", "middle")
+    					.attr("transform", function(d) {
+    						return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+    					})
+    					.text(function(d) { return d.text; });
+    			}
+        	for (p = 0; p < nbRows*nbColumns; p++) {   
+      				
+      			var innerArrayWordClouds= wordClouds[p];	
+      			var nbWordInnerArray = 	nbWord[p];
+      				
+      			var arrayValues = [];
+      			var wordWithMaxLetters=0;
+      			for(var j=0; j<nbWordInnerArray; j++){
+      				arrayValues[j] = [];
+      				arrayValues[j] = innerArrayWordClouds[j];
+      				if(arrayValues[j].length>wordWithMaxLetters){
+      					wordWithMaxLetters=arrayValues[j].length;
+      				}
+      			}
+      				
+            // => ici l'intervalle est tres important car il joue sur l'apparence des mots !
+      			d3.layout.cloud().size([cellSize*0.6, cellSize*0.6]) 
+      				.words(arrayValues.map(function(d) {
+      					return {text: d, size: (cellSize/wordWithMaxLetters)*0.7 };
+      				}))
+      				.rotate(function() { return ~~(Math.random() * 1) * 90; })
+      				.fontSize(function(d) { return d.size; })
+      				.on("end", draw)
+      				.start();
+              
+      			hexa.on('mouseover', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(10)		  
+      					.style("fill-opacity", 0.8);
+      									
+      				d3.select('#plot-message').text(function () {
+      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10);
+      					return ch;
+      				}); 
+      			});
+      			hexa.on('mouseout', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(1000)
+      					.style("fill-opacity", 1);
+      			});
+      		}
         }
-        
       }
     }
   }
