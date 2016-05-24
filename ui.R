@@ -21,7 +21,6 @@ shinyUI(fluidPage(
              
              h2("Welcome"), 
              fluidRow(
-               
                column(4,
                       wellPanel(
                         fileInput('file1', 'Choose CSV/TXT File'),
@@ -37,8 +36,8 @@ shinyUI(fluidPage(
                         selectInput('dec', 'Decimal mark', 
                                     c("Period '.'", "Comma ','"),
                                     "Period '.'"),
-                        helpText("Note: Even if the preview only shows a restricted
-                                 number of observations, the map will be based on the full dataset."))),
+                        helpText("Note: The preview only shows a restricted
+                                 number of observations, the full set is imported."))),
                column(8,
                       fluidRow(
                         column(6, 
@@ -48,6 +47,7 @@ shinyUI(fluidPage(
                       uiOutput("rownames.col"),
                       tableOutput("view"))
                )), 
+    
     tabPanel("Train", 
              wellPanel(fluidRow(column(2, h3("Map info:")),
                                 column(10, verbatimTextOutput("Message")))),
@@ -63,55 +63,7 @@ shinyUI(fluidPage(
                                       column(4, actionButton("varAll", "Select all variables")), 
                                       column(4, actionButton("varNone", "Unselect all variables"))), 
                              uiOutput("varchoice")))),
-    #     tabPanel("Graph", 
-    #              fluidRow(column(4, 
-    #                              ## Sélection du graphique et des variables
-    #                              selectInput("graphType", "Graph:", 
-    #                                          choices= c("Hitmap", "Radar", "Line", 
-    #                                                     "Camembert", "Barplot", "Boxplot",
-    #                                                     "Color", "Star", "Names", 
-    #                                                     "Dendrogram")),
-    #                              conditionalPanel('input.graphType == "Camembert" | input.graphType == "Color"', 
-    #                                               uiOutput("plotVarOne")),
-    #                              conditionalPanel(paste0('input.graphType == "Radar" | ', 
-    #                                                      'input.graphType == "Line" | ', 
-    #                                                      'input.graphType == "Barplot" | ', 
-    #                                                      'input.graphType == "Boxplot" | ', 
-    #                                                      'input.graphType == "Star"'), 
-    #                                               uiOutput("plotVarMult"))),
-    #                       column(8, 
-    #                              fluidRow(column(6, numericInput("plotSize", "Plot size:", 100, min= 10)), 
-    #                                       column(6, numericInput('kohSuperclass', 'Nb. superclasses', 2, min= 1))),
-    #                              ## Pour afficher seulement le graphique choisi :
-    #                              conditionalPanel('input.graphType == "Dendrogram"', 
-    #                                               plotOutput("screeplot")),
-    #                              conditionalPanel('input.graphType == "Camembert"', 
-    #                                               includeHTML("Pie.html"),
-    #                                               HTML('<div id="thePie" class="shiny-Camembert"><svg /></div>')),
-    #                              conditionalPanel('input.graphType == "Radar"',
-    #                                               includeHTML("Radar.html"), 
-    #                                               HTML('<div id="theRadar" class="shiny-Radar"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Hitmap"',
-    #                                               includeHTML("Hitmap.html"), 
-    #                                               HTML('<div id="theHitmap" class="shiny-Hitmap"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Line"',
-    #                                               includeHTML("Ligne.html"), 
-    #                                               HTML('<div id="theLigne" class="shiny-Ligne"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Barplot"',
-    #                                               includeHTML("BatonEtHistogramme.html"), 
-    #                                               HTML('<div id="theBaton" class="shiny-Baton"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Boxplot"',
-    #                                               includeHTML("BoiteMoustache.html"), 
-    #                                               HTML('<div id="theBoxplot" class="shiny-Boxplot"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Color"',
-    #                                               includeHTML("Color.html"), 
-    #                                               HTML('<div id="theColor" class="shiny-Color"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Star"',
-    #                                               includeHTML("Etoile.html"), 
-    #                                               HTML('<div id="theStar" class="shiny-Star"><svg /></div>')), 
-    #                              conditionalPanel('input.graphType == "Names"',
-    #                                               includeHTML("NuageMot.html"), 
-    #                                               HTML('<div id="theWordcloud" class="shiny-Wordcloud"><svg /></div>')))))
+    
     tabPanel("Graph", 
              fluidRow(column(4, 
                              ## Sélection du graphique et des variables
@@ -134,9 +86,11 @@ shinyUI(fluidPage(
                              ## Pour afficher seulement le graphique choisi :
                              conditionalPanel('input.graphType == "Dendrogram"', 
                                               plotOutput("screeplot")),
-                             includeHTML("graphs.html"), 
-                             HTML('<h4 id="plot-message">Hover over the plot for information.</h4>'),
-                             HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'))))
+                             conditionalPanel('input.graphType != "Dendrogram"', 
+                                              includeHTML("graphs.html"), 
+                                              HTML('<h4 id="plot-message">Hover over the plot for information.</h4>'),
+                                              HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'))
+                             )))
   )
   
 ))

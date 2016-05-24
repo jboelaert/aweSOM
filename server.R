@@ -223,7 +223,7 @@ shinyServer(function(input, output, session) {
                              selected= NA)
   })
   
-  # Train the SOM when the button is hit
+  ## Train the SOM when the button is hit
   current.som <- reactive({   
     if (input$trainbutton > 0) {
       isolate({
@@ -235,7 +235,7 @@ shinyServer(function(input, output, session) {
     } else NULL
   })
   
-  # Compute superclasses when current.som or superclass changes
+  ## Compute superclasses when current.som or superclass changes
   current.hclust <- reactive({
     if(!is.null(current.som()))
       hclust(dist(current.som()$codes), "ward.D2")
@@ -243,6 +243,17 @@ shinyServer(function(input, output, session) {
   current.sc <- reactive({
     if(!is.null(current.hclust()))
       cutree(current.hclust(), input$kohSuperclass)
+  })
+  
+  ## Current training vars
+  current.trainvars <- reactive({
+    if(!is.null(current.som()))
+      isolate(input$varchoice)
+  })
+  ## Current training rows (no NA)
+  current.trainrows <- reactive({
+    if(!is.null(current.som()))
+      rowSums(is.na(current.data()[, isolate(input$varchoice)])) == 0
   })
   
   
@@ -265,97 +276,14 @@ shinyServer(function(input, output, session) {
                 selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
   })
     
-  ## Passer les données aux graphiques
+  ## Scree plot
   output$screeplot <- renderPlot({
     if (is.null(current.som())) return()
     plot(current.hclust())
     rect.hclust(current.hclust(), k= input$kohSuperclass)
   })
   
-  output$thePie <- reactive({
-    if (is.null(current.som()) | input$graphType != "Camembert" | is.null(input$plotVarOne)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    getPlotParams("Camembert", current.som(), current.sc(), 
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarOne], input$plotSize, input$plotVarOne)
-  })
-  
-  output$theRadar <- reactive({
-    if (is.null(current.som()) | input$graphType != "Radar" | is.null(input$plotVarMult)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Radar", current.som(), current.sc(), 
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarMult],
-                  input$plotSize, input$plotVarMult)
-  })
-
-  output$theLigne <- reactive({
-    if (is.null(current.som()) | input$graphType != "Line" | is.null(input$plotVarMult)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    getPlotParams("Line", current.som(), current.sc(), 
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarMult],
-                  input$plotSize, input$plotVarMult)
-  })
-
-  output$theHitmap <- reactive({
-    if (is.null(current.som()) | input$graphType != "Hitmap") 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Hitmap", current.som(), current.sc(), NULL, input$plotSize, NULL)
-  })
-
-  output$theBaton <- reactive({
-    if (is.null(current.som()) | input$graphType != "Barplot" | is.null(input$plotVarMult)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Barplot", current.som(), current.sc(), 
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarMult], 
-                  input$plotSize, input$plotVarMult)
-  })
-  
-  output$theBoxplot <- reactive({
-    if (is.null(current.som()) | input$graphType != "Boxplot" | is.null(input$plotVarMult)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Boxplot", current.som(), current.sc(),
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarMult], 
-                  input$plotSize, input$plotVarMult)
-  })
-  
-  output$theColor <- reactive({
-    if (is.null(current.som()) | input$graphType != "Color" | is.null(input$plotVarOne)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Color", current.som(), current.sc(),
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarOne], 
-                  input$plotSize, input$plotVarOne)
-  })
-  
-  output$theStar <- reactive({
-    if (is.null(current.som()) | input$graphType != "Star" | is.null(input$plotVarMult)) 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Star", current.som(), current.sc(),
-                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                                 input$plotVarMult], 
-                  input$plotSize, input$plotVarMult)
-  })
-  
-  output$theWordcloud <- reactive({
-    if (is.null(current.som()) | input$graphType != "Names") 
-      return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
-    getPlotParams("Names", current.som(), current.sc(), 
-                  current.rownames()[rowSums(is.na(current.data()[, input$varchoice])) == 0], 
-                  input$plotSize, NULL)
-  })
-  
-  ################################################
+  ## Fancy JS Plots
   output$thePlot <- reactive({
     if (is.null(current.som()) | !(input$graphType %in% c("Radar", "Camembert",
                                                           "Barplot", "Boxplot", 
@@ -368,19 +296,17 @@ shinyServer(function(input, output, session) {
     if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot", "Line")) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
-      data <- current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                             plotVar]
+      data <- current.data()[current.trainrows(), plotVar]
     } else if (input$graphType %in% c("Color", "Camembert")) {
       if (is.null(input$plotVarOne)) return()
       plotVar <- input$plotVarOne
-      data <- current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
-                             plotVar]
+      data <- current.data()[current.trainrows(), plotVar]
     } else if (input$graphType %in% c("Hitmap")) {
       plotVar <- NULL
       data <- NULL
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
-      data <- current.rownames()[rowSums(is.na(current.data()[, input$varchoice])) == 0]
+      data <- current.rownames()[current.trainrows()]
     }
     
     getPlotParams(input$graphType, current.som(), current.sc(), 
