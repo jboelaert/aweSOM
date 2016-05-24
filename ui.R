@@ -64,10 +64,11 @@ shinyUI(fluidPage(
              fluidRow(column(4, 
                              ## Sélection du graphique et des variables
                              selectInput("graphType", "Graph:", 
-                                         choices= c("Dendrogram", "Camembert", "Radar", "Hitmap")),
+                                         choices= c("Hitmap", "Radar", "Line", 
+                                                    "Camembert", "Dendrogram")),
                              conditionalPanel('input.graphType == "Camembert"', 
                                               uiOutput("plotVarOne")),
-                             conditionalPanel('input.graphType == "Radar"', 
+                             conditionalPanel('input.graphType == "Radar" | input.graphType == "Line"', 
                                               uiOutput("plotVarMult"))),
                       column(8, 
                              fluidRow(column(6, numericInput("plotSize", "Plot size:", 100, min= 10)), 
@@ -78,12 +79,15 @@ shinyUI(fluidPage(
                              conditionalPanel('input.graphType == "Camembert"', 
                                               includeHTML("Pie.html"),
                                               HTML('<div id="thePie" class="shiny-Camembert"><svg /></div>')),
-                             conditionalPanel('input.graphType == "Radar"', 
-                                              HTML('<div id="theRadar" class="shiny-Radar"><svg /></div>'),
-                                              includeHTML("Radar.html")), 
-                             conditionalPanel('input.graphType == "Hitmap"', 
-                                              HTML('<div id="theHitmap" class="shiny-Hitmap"><svg /></div>'),
-                                              includeHTML("Hitmap.html")))))
+                             conditionalPanel('input.graphType == "Radar"',
+                                              includeHTML("Radar.html"), 
+                                              HTML('<div id="theRadar" class="shiny-Radar"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Hitmap"',
+                                              includeHTML("Hitmap.html"), 
+                                              HTML('<div id="theHitmap" class="shiny-Hitmap"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Line"',
+                                              includeHTML("Ligne.html"), 
+                                              HTML('<div id="theLigne" class="shiny-Ligne"><svg /></div>')))))
     )
   )
 )

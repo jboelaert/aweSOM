@@ -1,0 +1,330 @@
+<header>
+  <h4 id="Ligne-Info"></h4>
+</header>
+
+<script>
+
+var histOutputBinding = new Shiny.OutputBinding();
+
+  $.extend(histOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-Ligne');
+    },
+    renderValue: function(el, data) {
+    //remove the old graph
+	document.getElementById("theLigne").innerHTML = "";
+	if(data == null ) {return;}
+	
+	var nbRows=data.gridInfo.nbLines;
+	var nbColumns=data.gridInfo.nbColumns;
+	var topology = data.gridInfo.topology;
+	var superclass = data.superclass;
+	var superclassColor = data.superclassColor;
+	var nbPoints = data.nbPoints;
+	var lineNormalizedValues = data.lineNormalizedValues;
+	var lineRealValues = data.lineRealValues;
+	var cellSize=data.sizeInfo;
+	var w = cellSize*nbColumns;
+	var h = cellSize*nbRows;
+	document.getElementById("Ligne-Info").style.textAlign = "center";
+
+	if(topology.localeCompare('rectangular')==0){
+		d3.select('#Ligne-Info').text(function () {return 'Square Grid : Line';});
+		lineSquareSizeGrid();
+	}else if(topology.localeCompare('hexagonal')==0){
+		d3.select('#Ligne-Info').text(function () {return 'Hexagonal Grid : Line';});
+		lineHexagonalGrid();
+	}
+	
+	function lineSquareSizeGrid(){
+		
+		var svg = d3.select('#theLigne').append('svg')
+			.attr("style"," display:block; margin:auto; margin-top:30px; background-color:blue")
+			.attr({
+			width: w,
+			height: h
+		});
+		
+		_.times(nbRows, function(n) {
+			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+				.data(d3.range(nbColumns))
+				.enter().append('rect')
+				.attr({
+					class: function(d, i) {
+						return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+					},
+					id: function(d, i) {
+						return 's-' + (n + 1) + (i + 1);
+					},
+					width: cellSize,
+					height: cellSize,
+					x: function(d, i) {
+						return i * cellSize;
+					},
+					y: n * cellSize,
+					fill: function(d, i) {
+						var indice = superclass[(n*nbColumns)+i];
+						return superclassColor[indice-1];
+					},
+					stroke: '#FDBB30'
+				});
+								  
+	
+			var points = svg.selectAll('rect' + ' .row-' + (n + 1))
+				.data(d3.range(nbColumns))
+				.enter()
+				.append("path")
+				.attr("class", "ligne")
+				.attr("d", function(d, i) { 
+					innerArrayNormalizedValues= lineNormalizedValues[(n*nbColumns)+i];				
+					innerArrayRealValues= lineRealValues[(n*nbColumns)+i];
+				
+					var arrayValues = [];
+					for(var j=0; j<nbPoints; j++){
+						arrayValues[j] = [];
+						arrayValues[j].px = cellSize*10/100+j*((cellSize-(cellSize*20/100))/(nbPoints-1));
+						arrayValues[j].py = innerArrayNormalizedValues[j]*cellSize;
+						arrayValues[j].realValue = innerArrayRealValues[j];
+					}
+					
+					var lineFunction = d3.svg.line()
+                        .x(function(d) { return d.px+i*cellSize; })
+                        .y(function(d) { return -d.py+(n+1)*cellSize; })
+                        .interpolate("linear");
+								  
+					return lineFunction(arrayValues);
+				})
+				.attr("stroke", function(d) { 
+					return "#112E45"; 
+				})
+				.attr("stroke-width", 1.2)
+				.attr("fill", "none");
+				
+			var focus = points.select("path.ligne")
+				.data(d3.range(nbColumns))
+				.enter()
+				.append("circle")
+				.attr("class", function(d, i) { 
+					return "y"+(n*nbColumns+i);
+				})
+				.attr("cx", function(d, i) {
+					var px = cellSize*10/100+i*cellSize;	
+					return px;
+				})
+				.attr("cy", function(d, i) {
+					innerArrayNormalizedValues= lineNormalizedValues[(n*nbColumns)+i];	
+					var py = (-innerArrayNormalizedValues[0]*cellSize)+(n+1)*cellSize;
+					return py;
+				})
+				.attr("r", 4)
+				.style("fill", "none")
+				.style("stroke", "#112E45");
+			
+			rows.on('mousemove', function (d, i) {	
+				console.log(i);
+				for(var k=0; k<nbRows; k++){
+					for(var l=0; l<nbColumns; l++){
+						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
+						innerArrayRealValues= lineRealValues[(k*nbColumns)+l];
+						
+						var arrayValues = [];
+						for(var j=0; j<nbPoints; j++){
+							arrayValues[j] = [];
+							arrayValues[j].px = cellSize*10/100+j*((cellSize-(cellSize*20/100))/(nbPoints-1))+l*cellSize;
+							arrayValues[j].py = -(innerArrayNormalizedValues[j]*cellSize)+(k+1)*cellSize;
+							arrayValues[j].realValue = innerArrayRealValues[j];
+						}
+						
+						var bisectPoints = d3.bisector(function(d) { return d.px; }).left;
+						var x = d3.time.scale().range([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+						x.domain([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+						
+						var additionalX = (l-i)*cellSize;
+						
+						var x0 = x.invert(d3.mouse(this)[0]+additionalX),
+							p = bisectPoints(arrayValues, x0, 1),
+							d0 = arrayValues[p - 1],
+							d1 = arrayValues[p];
+							if(p<nbColumns){
+								d = x0 - d0.px > d1.px - x0 ? d1 : d0;
+							}
+							d = d0;
+							
+
+						//console.log(x0);
+						svg.select("circle.y"+(k*nbColumns+l))
+							.attr("transform", "translate(" + (d.px-cellSize*10/100-l*cellSize)+ "," + (d.py-arrayValues[0].py) + ")");
+
+						if(l==i && k==n){
+							d3.select('#Ligne-Info').text(function () {
+								var pointValue = d == d0 ? arrayValues[p-1].realValue : arrayValues[p].realValue
+								var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse: ' + superclass[(n*nbColumns)+i] + ' | ' + 'pointValue: ' + pointValue;
+								return ch;
+							});
+						}
+					}
+				}
+			});
+
+		});
+	}
+	
+	function lineHexagonalGrid(){
+		var margin = {
+			top: 30,
+			right: 20,
+			bottom: 20,
+			left: 50
+		};
+
+		var width = 850;
+		var height = 350;
+		var widtht = 850;
+		var heightt = 350;
+
+		var hexRadius=cellSize/2;	
+		var hexInRadius;	
+			
+		
+		//Set the new height and width of the SVG based on the max possible
+		width = nbColumns*hexRadius*Math.sqrt(3);
+		height = nbRows*1.5*hexRadius+0.5*hexRadius;
+
+		//Set the hexagon radius
+		var hexbin = d3.hexbin().radius(hexRadius);
+  
+		//Calculate the center positions of each hexagon	
+		var points = [];
+		for (var i = 0; i < nbRows; i++) {
+			for (var j = 0; j < nbColumns; j++) {
+				points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
+			}
+		}
+		 
+		var svg = d3.select("#theLigne").append("svg")
+			.attr("width", width+hexRadius+5)
+			.attr("height", height)
+			.attr("style"," display:block; margin:auto; margin-top:30px;")
+			.append("g")
+			.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
+
+		var hexa = svg.selectAll(".hexagon")
+			.data(hexbin(points))
+			.enter().append("path")
+			.attr("class", "hexagon")
+			.attr("d", function (d) {
+				return "M" + d.x + "," + d.y + hexbin.hexagon();
+			})
+			.attr("stroke", function (d,i) {
+				return "#fff";
+			})
+			.attr("stroke-width", "1px")
+			.style("fill", function (d,i) {
+				var indice = superclass[i];
+				return superclassColor[indice-1];
+			});
+
+		var coordinatesArray = hexbin(points);
+console.log("hexbin : "+svg.select("path.hexagon"));	
+		for (var indice = 0; indice < nbRows*nbColumns; indice++) {
+			innerArrayNormalizedValues= lineNormalizedValues[indice];				
+			innerArrayRealValues= lineRealValues[indice];
+				
+			var arrayValues = [];
+			for(var j=0; j<nbPoints; j++){
+				arrayValues[j] = [];
+				arrayValues[j].px = cellSize*20/100+j*((cellSize-(cellSize*40/100))/(nbPoints-1));
+				arrayValues[j].py = innerArrayNormalizedValues[j]*cellSize*0.5;
+				arrayValues[j].realValue = innerArrayRealValues[j];
+			}
+					
+			var points = svg.append("g").selectAll(".hexagon")
+				.data(d3.range(1))
+				.enter()
+				.append("path")
+				.attr("class", "ligne")
+				.attr("d", function(d, i) { 				
+					var lineFunction = d3.svg.line()
+						.x(function(d) { return d.px; })
+						.y(function(d) { return -d.py;})
+						.interpolate("linear");
+									  
+					return lineFunction(arrayValues);
+				})
+				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y+cellSize*25/100) + ')')
+				.attr("stroke", function(d) { 
+					return "#112E45"; 
+				})
+				.attr("stroke-width", 1.2)
+				.attr("fill", "none");
+					
+			var focus = points.select("path.ligne")
+				.data(d3.range(1))
+				.enter()
+				.append("circle")
+				.attr("class", function(d, i) { 
+					return "y"+(indice);
+				})
+				.attr("cx", function(d, i) {
+					var px = cellSize*20/100+i*cellSize;	
+					return px;
+				})
+				.attr("cy", function(d, i) {
+					innerArrayNormalizedValues= lineNormalizedValues[indice];	
+					var py = (-innerArrayNormalizedValues[0]*cellSize)*0.5;
+					return py;
+				})
+				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y+cellSize*25/100) + ')')
+				.attr("r", 4)
+				.style("fill", "none")
+				.style("stroke", "#112E45");
+			
+			hexa.on('mousemove', function (d, i) {
+				for(var k=0; k<nbRows; k++){
+					for(var l=0; l<nbColumns; l++){
+						var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
+						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
+						innerArrayRealValues= lineRealValues[(k*nbColumns)+l];
+						
+						var arrayValues = [];
+						for(var j=0; j<nbPoints; j++){
+							arrayValues[j] = [];
+							arrayValues[j].px = cellSize*20/100+j*((cellSize-(cellSize*40/100))/(nbPoints-1))+coordinatesArray[(k*nbColumns)+l].x-cellSize/2;
+							arrayValues[j].py = -(innerArrayNormalizedValues[j]*cellSize*0.5)+coordinatesArray[(k*nbColumns)+l].y+cellSize*25/100;
+							arrayValues[j].realValue = innerArrayRealValues[j];
+						}
+						
+						var bisectPoints = d3.bisector(function(d) { return d.px; }).left;
+						var x = d3.time.scale().range([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+						x.domain([arrayValues[0].px, arrayValues[arrayValues.length - 1].px]);
+						
+						var additionalX = coordinatesArray[(k*nbColumns)+l].x - coordinatesArray[indice].x;
+
+						var x0 = x.invert(d3.mouse(this)[0] + additionalX),
+							p = bisectPoints(arrayValues, x0, 1),
+							d0 = arrayValues[p - 1],
+							d1 = arrayValues[p];
+							if(p<nbColumns){
+								d = x0 - d0.px > d1.px - x0 ? d1 : d0;
+							}
+							d = d0;
+
+						svg.select("circle.y"+((k*nbColumns)+l))
+							.attr("transform", "translate(" + (d.px-cellSize*20/100) + "," + (d.py-arrayValues[0].py+(cellSize-cellSize*75/100)+k*cellSize*75/100) + ")");	
+						
+						if(l==parseInt((i%nbRows),10) && k==parseInt((i/nbRows),10)){
+							d3.select('#Ligne-Info').text(function () {
+								var pointValue = d == d0 ? arrayValues[p-1].realValue : arrayValues[p].realValue;
+								var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse: ' + superclass[indice] + ' | ' + 'pointValue: ' + pointValue;
+								return ch;
+							});
+						}
+					}
+				}
+			});
+		}
+	}
+  }
+});
+Shiny.outputBindings.register(histOutputBinding, 'just.testing');			
+</script>	

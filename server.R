@@ -17,70 +17,67 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
                                     'rectangular', "hexagonal"))
   superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
   
+  res <- list(saveToPng= TRUE, 
+              sizeInfo= plotsize, 
+              gridInfo= gridInfo, 
+              superclass= superclass, 
+              superclassColor= superclassColor)
+  
   ## Traitement data si besoin :
   if (type == "Camembert") {
     data <- as.factor(data)
     unique.values <- levels(data)
     nvalues <- nlevels(data)
-  } else if (type == "Radar") {
+  } else if (type %in% c("Radar", "Line")) {
     if (is.null(dim(data))) {
       data <- data.frame(data)
       colnames(data) <- varnames
     }
     nvar <- length(varnames)
+    normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
+    normValues <- unname(lapply(split(normDat, clustering), 
+                                function(x) {
+                                  if (!nrow(x)) return(rep(0, nvar))
+                                  unname(colMeans(x))
+                                }))
+    realValues <- unname(lapply(split(data, clustering), 
+                                function(x) {
+                                  if (!nrow(x)) return(rep(0, nvar))
+                                  unname(round(colMeans(x), 3))
+                                }))
   }
   
   ## Paramètres spécifiques :
   if (type == "Camembert") {
-    list(saveToPng= TRUE,
-         sizeInfo= plotsize, 
-         gridInfo= gridInfo, 
-         superclass= superclass, 
-         superclassColor= superclassColor, 
-         parts= nvalues, 
-         label= unique.values, 
-         labelColor= substr(rainbow(nvalues), 1, 7), 
-         pieNormalizedSize= unname(.9 * sqrt(clust.table) / sqrt(max(clust.table))), 
-         pieRealSize= unname(clust.table), 
-         pieNormalizedValues= unname(lapply(split(data, clustering), 
-                                            function(x) {
-                                              if (!length(x)) return(rep(1/nvalues, nvalues))
-                                              unname(table(x) / length(x))
-                                            })), 
-         pieRealValues= unname(lapply(split(data, clustering), 
-                                      function(x) unname(table(x)))))
+    res$parts <- nvalues
+    res$label <- unique.values
+    res$labelColor <- substr(rainbow(nvalues), 1, 7)
+    res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
+    res$pieRealSize <- unname(clust.table)
+    res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
+                                             function(x) {
+                                               if (!length(x)) return(rep(1/nvalues, nvalues))
+                                               unname(table(x) / length(x))
+                                             }))
+    res$pieRealValues <- unname(lapply(split(data, clustering), 
+                                       function(x) unname(table(x))))
   } else if (type == "Radar") {
-    normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
-      
-    list(saveToPng= FALSE,
-         sizeInfo= plotsize, 
-         gridInfo= gridInfo, 
-         superclass= superclass, 
-         superclassColor= superclassColor, 
-         parts= nvar,
-         label= varnames,
-         labelColor= substr(rainbow(nvar), 1, 7),
-         radarNormalizedSize= unname(.9 * (clust.table > 0)),
-         radarRealSize= unname(clust.table),
-         radarNormalizedValues= unname(lapply(split(normDat, clustering), 
-                                              function(x) {
-                                                if (!nrow(x)) return(rep(0, nvar))
-                                                unname(colMeans(x))
-                                              })),
-         radarRealValues= unname(lapply(split(data, clustering), 
-                                        function(x) {
-                                          if (!nrow(x)) return(rep(0, nvar))
-                                          unname(round(colMeans(x), 3))
-                                        })))
+    res$parts <- nvar
+    res$label <- varnames
+    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    res$radarNormalizedSize <- unname(.9 * (clust.table > 0))
+    res$radarRealSize <- unname(clust.table)
+    res$radarNormalizedValues <- normValues
+    res$radarRealValues <- realValues
   } else if (type == "Hitmap") {
-    list(saveToPng= TRUE,
-         sizeInfo= plotsize, 
-         gridInfo= gridInfo, 
-         superclass= superclass, 
-         superclassColor= superclassColor, 
-         hitmapNormalizedValues= unname(.9 * sqrt(clust.table) / sqrt(max(clust.table))),
-         hitmapRealValues= unname(clust.table))
+    res$hitmapNormalizedValues <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
+    res$hitmapRealValues <- unname(clust.table)
+  } else if (type == "Ligne") {
+    res$nbPoints <- nvar
+    res$lineNormalizedValues <- normValues
+    res$lineRealValues <- realValues    
   }
+  res
 }
 
 
@@ -120,14 +117,15 @@ shinyServer(function(input, output, session) {
     if (is.null(d.input)) 
       return(NULL)
 
-    if (!is.null(input$rownames.col) & input$rownames.col != "(None)") {
-      if (!any(duplicated(d.input[, input$rownames.col])))
-        try(row.names(d.input) <- as.character(d.input[, input$rownames.col]))
-    }
-    if (ncol(d.input)>input$ncol.preview) 
+    if (!is.null(input$rownames.col))
+      if (input$rownames.col != "(None)")
+        if (!any(duplicated(d.input[, input$rownames.col])))
+          try(row.names(d.input) <- as.character(d.input[, input$rownames.col]))
+
+    if (ncol(d.input) > input$ncol.preview) 
       d.input <- d.input[,1:input$ncol.preview]
     
-    head(d.input, n=input$nrow.preview) 
+    head(d.input, n= input$nrow.preview)
   })
 
   # Update choices for rownames column
@@ -231,8 +229,14 @@ shinyServer(function(input, output, session) {
   })
     
   ## Passer les données aux graphiques
+  output$screeplot <- renderPlot({
+    if (is.null(current.som())) return()
+    plot(current.hclust())
+    rect.hclust(current.hclust(), k= input$kohSuperclass)
+  })
+  
   output$thePie <- reactive({
-    if (is.null(current.som()) | input$graphType != "Camembert") 
+    if (is.null(current.som()) | input$graphType != "Camembert" | is.null(input$plotVarOne)) 
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     getPlotParams("Camembert", current.som(), current.sc(), 
                   current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
@@ -249,6 +253,16 @@ shinyServer(function(input, output, session) {
                   input$plotSize, input$plotVarMult)
   })
 
+  output$theLine <- reactive({
+    if (is.null(current.som()) | input$graphType != "Line" | is.null(input$plotVarMult)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Line", current.som(), current.sc(), 
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarMult],
+                  input$plotSize, input$plotVarMult)
+  })
+
   output$theHitmap <- reactive({
     if (is.null(current.som()) )# | input$graphType != "Radar") 
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
@@ -256,9 +270,4 @@ shinyServer(function(input, output, session) {
     getPlotParams("Hitmap", current.som(), current.sc(), NULL, input$plotSize, NULL)
   })
   
-  output$screeplot <- renderPlot({
-    if (is.null(current.som())) return()
-    plot(current.hclust())
-    rect.hclust(current.hclust(), k= input$kohSuperclass)
-  })
 })
