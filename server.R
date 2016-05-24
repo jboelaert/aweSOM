@@ -17,7 +17,8 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
                                     'rectangular', "hexagonal"))
   superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
   
-  res <- list(saveToPng= TRUE, 
+  res <- list(plotType= type, 
+              saveToPng= TRUE, 
               sizeInfo= plotsize, 
               gridInfo= gridInfo, 
               superclass= superclass, 
@@ -354,4 +355,28 @@ shinyServer(function(input, output, session) {
                   input$plotSize, NULL)
   })
   
+  ################################################
+  output$thePlot <- reactive({
+    if (is.null(current.som()) | !(input$graphType %in% c("Radar", "Camembert")))
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    
+    if (input$graphType %in% c("Radar", "Star")) {
+      if (is.null(input$plotVarMult)) return()
+      plotVar <- input$plotVarMult
+      data <- current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                             plotVar]
+    } else if (input$graphType %in% c("Color", "Camembert")) {
+      if (is.null(input$plotVarOne)) return()
+      plotVar <- input$plotVarOne
+      data <- current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                             plotVar]
+    } else if (input$graphType %in% c("Hitmap")) {
+      plotVar <- NULL
+      data <- NULL
+    }
+    
+    getPlotParams(input$graphType, current.som(), current.sc(), 
+                  data, input$plotSize, plotVar)
+  })    
 })
