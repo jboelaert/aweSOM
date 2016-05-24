@@ -15,6 +15,9 @@ shinyUI(fluidPage(
              includeHTML("js/svg_todataurl.js"),
              includeHTML("js/rgbcolor.js"),
              includeHTML("js/canvg.js"),
+             includeHTML("js/box.js"),
+             includeHTML("js/radar-chart-d3.js"),
+             includeHTML("js/word-cloud.js"),
              
              h2("Welcome"), 
              fluidRow(
@@ -65,10 +68,16 @@ shinyUI(fluidPage(
                              ## Sélection du graphique et des variables
                              selectInput("graphType", "Graph:", 
                                          choices= c("Hitmap", "Radar", "Line", 
-                                                    "Camembert", "Dendrogram")),
-                             conditionalPanel('input.graphType == "Camembert"', 
+                                                    "Camembert", "Barplot", "Boxplot",
+                                                    "Color", "Star", "Names", 
+                                                    "Dendrogram")),
+                             conditionalPanel('input.graphType == "Camembert" | input.graphType == "Color"', 
                                               uiOutput("plotVarOne")),
-                             conditionalPanel('input.graphType == "Radar" | input.graphType == "Line"', 
+                             conditionalPanel(paste0('input.graphType == "Radar" | ', 
+                                                     'input.graphType == "Line" | ', 
+                                                     'input.graphType == "Barplot" | ', 
+                                                     'input.graphType == "Boxplot" | ', 
+                                                     'input.graphType == "Star"'), 
                                               uiOutput("plotVarMult"))),
                       column(8, 
                              fluidRow(column(6, numericInput("plotSize", "Plot size:", 100, min= 10)), 
@@ -87,7 +96,22 @@ shinyUI(fluidPage(
                                               HTML('<div id="theHitmap" class="shiny-Hitmap"><svg /></div>')), 
                              conditionalPanel('input.graphType == "Line"',
                                               includeHTML("Ligne.html"), 
-                                              HTML('<div id="theLigne" class="shiny-Ligne"><svg /></div>')))))
+                                              HTML('<div id="theLigne" class="shiny-Ligne"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Barplot"',
+                                              includeHTML("BatonEtHistogramme.html"), 
+                                              HTML('<div id="theBaton" class="shiny-Baton"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Boxplot"',
+                                              includeHTML("BoiteMoustache.html"), 
+                                              HTML('<div id="theBoxplot" class="shiny-Boxplot"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Color"',
+                                              includeHTML("Color.html"), 
+                                              HTML('<div id="theColor" class="shiny-Color"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Star"',
+                                              includeHTML("Etoile.html"), 
+                                              HTML('<div id="theStar" class="shiny-Star"><svg /></div>')), 
+                             conditionalPanel('input.graphType == "Names"',
+                                              includeHTML("NuageMot.html"), 
+                                              HTML('<div id="theWordcloud" class="shiny-Wordcloud"><svg /></div>')))))
     )
   )
 )

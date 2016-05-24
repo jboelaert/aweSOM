@@ -1,0 +1,213 @@
+<header>
+  <h4 id="Color-Info"></h4>
+</header>
+
+<script>
+
+var histOutputBinding = new Shiny.OutputBinding();
+
+  $.extend(histOutputBinding, {
+    find: function(scope) {
+      return $(scope).find('.shiny-Color');
+    },
+    renderValue: function(el, data) {
+    //remove the old graph
+	document.getElementById("theColor").innerHTML = "";
+	if(data == null ) {return;}
+	
+	var nbRows=data.gridInfo.nbLines;
+	var nbColumns=data.gridInfo.nbColumns;
+	var topology = data.gridInfo.topology;
+    var cellSize = data.sizeInfo;
+	var superclass = data.superclass;
+	var activate = data.activate;
+	var colorNormalizedValues = data.colorNormalizedValues;
+	var colorRealValues = data.colorRealValues;
+    var w = cellSize*nbColumns;
+    var h = cellSize*nbRows;
+	document.getElementById("Color-Info").style.textAlign = "center";
+	
+	if(topology.localeCompare('rectangular')==0){
+		d3.select('#Color-Info').text(function () {return 'Square Grid : Color';});
+		colorSquareGrid();
+	}else if(topology.localeCompare('hexagonal')==0){
+		d3.select('#Color-Info').text(function () {return 'Hexagonal Grid : Color';});
+		colorHexagonalGrid();
+	}
+	
+	function colorSquareGrid(){
+		
+		var svg = d3.select('#theColor').append('svg')
+			.attr("style"," display:block; margin:auto; margin-top:30px; background-color:blue")
+			.attr({
+				width: w,
+				height: h
+			});
+
+	
+		_.times(nbRows, function(n) {	
+			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+				.data(d3.range(nbColumns))
+				.enter().append("g");
+				
+			rows.append('rect')
+				.attr({
+					class: function(d, i) {
+						return 'Square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+					},
+					id: function(d, i) {
+						return 's-' + (n + 1) + (i + 1);
+					},
+					width: cellSize,
+					height: cellSize,
+					x: function(d, i) {
+						return i * cellSize;
+					},
+					y: n * cellSize,
+					fill: function(d, i) {
+						var red = 255;
+						var green = parseInt((255-((colorNormalizedValues[(n*nbColumns)+i])*255)),10);
+						var blue = 0;
+						return "rgb("+red+","+green+","+blue+")";
+					},
+					stroke: '#FDBB30'
+				});
+			
+			if(activate){
+				rows.append("text")
+					.attr("x", function(d, i) { return i * cellSize + cellSize*45/100; })
+					.attr("y", n * cellSize + cellSize*50/100)
+					.text(function(d, i) { return superclass[n*nbColumns+i]; })
+					.attr("font-family", "sans-serif")
+					.attr("font-size", cellSize*20/100)
+					.attr("fill", "#112E45");
+			}
+				  
+			rows.on('mouseover', function (d, i) {
+				var el = d3.select(this)
+					.transition()
+					.duration(10)		  
+					.style("fill-opacity", 0.8);
+								
+				d3.select('#Color-Info').text(function () {
+					var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' +  'value: ' + colorRealValues[(n*nbColumns)+i];
+					return ch;
+					}); 
+			});
+
+			rows.on('mouseout', function (d, i) {
+				var el = d3.select(this)
+					.transition()
+					.duration(1000)
+					.style("fill-opacity", 1);
+			});
+		});
+	}
+	
+	function colorHexagonalGrid(){
+		var margin = {
+			top: 30,
+			right: 20,
+			bottom: 20,
+			left: 50
+		};
+
+		var width = 850;
+		var height = 350;
+		var widtht = 850;
+		var heightt = 350;
+
+		var hexRadius=cellSize/2;	
+		var hexInRadius;	
+			
+
+		//Set the new height and width of the SVG based on the max possible
+		width = nbColumns*hexRadius*Math.sqrt(3);
+		height = nbRows*1.5*hexRadius+0.5*hexRadius;
+
+		widtht = nbColumns*hexInRadius*Math.sqrt(3);
+		heightt = nbRows*1.5*hexInRadius+0.5*hexInRadius;
+
+
+		//Set the hexagon radius
+		var hexbin = d3.hexbin().radius(hexRadius);
+			   
+		var hexbint = d3.hexbin().radius(hexInRadius);
+			   
+		//Calculate the center positions of each hexagon	
+		var points = [];
+		for (var i = 0; i < nbRows; i++) {
+			for (var j = 0; j < nbColumns; j++) {
+				points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
+			}
+		}
+
+		//Calculate the center positions of each element in the hexagon
+		var pointst = [];
+		for (var i = 0; i < nbRows; i++) {
+			for (var j = 0; j < nbColumns; j++) {
+				pointst.push([(hexInRadius *j *1.75), hexInRadius *i*1.5]);
+			}
+		}
+
+		var svg = d3.select("#theColor").append("svg")
+			.attr("width", width+hexRadius+5)
+			.attr("height", height)
+			.attr("style"," display:block; margin:auto; margin-top:30px;")
+			.append("g")
+			.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
+
+		var hexa = svg.selectAll(".hexagon")
+			.data(hexbin(points))
+			.enter().append("g");
+			
+		var coordinatesArray = hexbin(points);
+		
+		hexa.append("path")
+			.attr("class", "hexagon")
+			.attr("d", function (d) {
+				return "M" + d.x + "," + d.y + hexbin.hexagon();
+			})
+			.attr("stroke", function (d,i) {
+				return "#fff";
+			})
+			.attr("stroke-width", "1px")
+			.style("fill", function (d,i) {
+				var red = 255;
+				var green = parseInt((255-((colorNormalizedValues[i])*255)),10);
+				var blue = 0;
+				return "rgb("+red+","+green+","+blue+")";
+			});
+		
+		if(activate){
+			hexa.append("text")
+					.attr("x", function(d, i) { return coordinatesArray[i].x - cellSize*5/100 ; })
+					.attr("y", function(d, i) { return coordinatesArray[i].y + cellSize*5/100 ; })
+					.text(function(d, i) { return superclass[i]; })
+					.attr("font-family", "sans-serif")
+					.attr("font-size", cellSize*20/100)
+					.attr("fill", "#112E45");
+		}
+				
+		hexa.on('mouseover', function (d, i) {
+			var el = d3.select(this)
+				.transition()
+				.duration(10)		  
+				.style("fill-opacity", 0.8);
+								
+			d3.select('#Color-Info').text(function () {
+				return 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' +  'value: ' + colorRealValues[i];
+			}); 
+		});
+
+		hexa.on('mouseout', function (d, i) {
+			var el = d3.select(this)
+				.transition()
+				.duration(1000)
+				.style("fill-opacity", 1);
+		});			
+	}
+  }
+});
+Shiny.outputBindings.register(histOutputBinding, 'just.testing');			
+</script>	

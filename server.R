@@ -28,23 +28,28 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
     data <- as.factor(data)
     unique.values <- levels(data)
     nvalues <- nlevels(data)
-  } else if (type %in% c("Radar", "Line")) {
+  } else if (type %in% c("Radar", "Line", "Barplot", "Boxplot", "Color", "Star")) {
     if (is.null(dim(data))) {
       data <- data.frame(data)
       colnames(data) <- varnames
     }
+    if (type == "Color") 
+      data <- as.data.frame(sapply(data, as.numeric))
+    
     nvar <- length(varnames)
     normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
-    normValues <- unname(lapply(split(normDat, clustering), 
-                                function(x) {
-                                  if (!nrow(x)) return(rep(0, nvar))
-                                  unname(colMeans(x))
-                                }))
-    realValues <- unname(lapply(split(data, clustering), 
-                                function(x) {
-                                  if (!nrow(x)) return(rep(0, nvar))
-                                  unname(round(colMeans(x), 3))
-                                }))
+    if (type %in% c("Radar", "Line", "Barplot", "Color", "Star")) {
+      normValues <- unname(lapply(split(normDat, clustering), 
+                                  function(x) {
+                                    if (!nrow(x)) return(rep(0, nvar))
+                                    unname(colMeans(x))
+                                  }))
+      realValues <- unname(lapply(split(data, clustering), 
+                                  function(x) {
+                                    if (!nrow(x)) return(rep(0, nvar))
+                                    unname(round(colMeans(x), 3))
+                                  }))
+    }
   }
   
   ## Paramètres spécifiques :
@@ -72,10 +77,40 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
   } else if (type == "Hitmap") {
     res$hitmapNormalizedValues <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
     res$hitmapRealValues <- unname(clust.table)
-  } else if (type == "Ligne") {
+  } else if (type == "Line") {
     res$nbPoints <- nvar
     res$lineNormalizedValues <- normValues
     res$lineRealValues <- realValues    
+  } else if (type == "Barplot") {
+    res$nbBatons <- nvar
+    res$isHist <- FALSE
+    res$label <- varnames
+    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    res$batonNormalizedValues <- normValues
+    res$batonRealValues <- realValues
+  } else if (type == "Boxplot") {
+    res$nbBox <- nvar
+    res$label <- varnames
+    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    
+    boxes.norm <- lapply(split(normDat, clustering), boxplot, plot= F)
+    boxes.real <- lapply(split(data, clustering), boxplot, plot= F)
+    res$boxPlotNormalizedValues <- unname(lapply(boxes.norm, function(x) unname(as.list(as.data.frame(x$stats)))))
+    res$boxPlotRealValues <- unname(lapply(boxes.real, function(x) unname(as.list(as.data.frame(x$stats)))))
+    res$boxNormalizedExtremesValues <- unname(lapply(boxes.norm, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
+    res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
+  } else if (type == "Color") {
+    res$activate <- TRUE
+    res$colorNormalizedValues <- normValues
+    res$colorRealValues <- realValues    
+  } else if (type == "Star") {
+    res$nbSommet <- nvar
+    res$label <- varnames
+    res$starPlotNormalizedValues <- normValues
+    res$starPlotRealValues <- realValues
+  } else if (type == "Names") {
+    res$wordClouds <- unname(split(data, clustering))
+    res$nbWord <- unname(sapply(res$wordClouds, length))
   }
   res
 }
@@ -136,14 +171,14 @@ shinyServer(function(input, output, session) {
                 selected= "(None)")
   })
   
-  ## Rownames of the current dataset
+  ## Current rownames
   current.rownames <- reactive({
     if (is.null(current.data()))
       return(NULL)
     if (input$rownames.col != "(None)")
       if (!any(duplicated(current.data()[, input$rownames.col]))) 
         return(as.character(current.data()[, input$rownames.col]))
-    return(1:nrow(current.data()))
+    return(rownames(current.data()))
   })
 
   #############################################################################
@@ -223,9 +258,10 @@ shinyServer(function(input, output, session) {
   output$plotVarMult <- renderUI({
     data <- current.data()
     if (is.null(data)) return()
+    tmp.numeric <- sapply(data, is.numeric)
     selectInput("plotVarMult", "Plot variable:", multiple= T,
-                choices= colnames(data)[sapply(data, is.numeric)], 
-                selected= colnames(data)[sapply(data, is.numeric)])
+                choices= colnames(data)[tmp.numeric], 
+                selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
   })
     
   ## Passer les données aux graphiques
@@ -253,10 +289,9 @@ shinyServer(function(input, output, session) {
                   input$plotSize, input$plotVarMult)
   })
 
-  output$theLine <- reactive({
+  output$theLigne <- reactive({
     if (is.null(current.som()) | input$graphType != "Line" | is.null(input$plotVarMult)) 
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
-    
     getPlotParams("Line", current.som(), current.sc(), 
                   current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
                                  input$plotVarMult],
@@ -264,10 +299,59 @@ shinyServer(function(input, output, session) {
   })
 
   output$theHitmap <- reactive({
-    if (is.null(current.som()) )# | input$graphType != "Radar") 
+    if (is.null(current.som()) | input$graphType != "Hitmap") 
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
     getPlotParams("Hitmap", current.som(), current.sc(), NULL, input$plotSize, NULL)
+  })
+
+  output$theBaton <- reactive({
+    if (is.null(current.som()) | input$graphType != "Barplot" | is.null(input$plotVarMult)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Barplot", current.som(), current.sc(), 
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarMult], 
+                  input$plotSize, input$plotVarMult)
+  })
+  
+  output$theBoxplot <- reactive({
+    if (is.null(current.som()) | input$graphType != "Boxplot" | is.null(input$plotVarMult)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Boxplot", current.som(), current.sc(),
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarMult], 
+                  input$plotSize, input$plotVarMult)
+  })
+  
+  output$theColor <- reactive({
+    if (is.null(current.som()) | input$graphType != "Color" | is.null(input$plotVarOne)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Color", current.som(), current.sc(),
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarOne], 
+                  input$plotSize, input$plotVarOne)
+  })
+  
+  output$theStar <- reactive({
+    if (is.null(current.som()) | input$graphType != "Star" | is.null(input$plotVarMult)) 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Star", current.som(), current.sc(),
+                  current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
+                                 input$plotVarMult], 
+                  input$plotSize, input$plotVarMult)
+  })
+  
+  output$theWordcloud <- reactive({
+    if (is.null(current.som()) | input$graphType != "Names") 
+      return(NULL) # si on n'a pas calculé, on donne NULL à JS
+    
+    getPlotParams("Names", current.som(), current.sc(), 
+                  current.rownames()[rowSums(is.na(current.data()[, input$varchoice])) == 0], 
+                  input$plotSize, NULL)
   })
   
 })
