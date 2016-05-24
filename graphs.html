@@ -1,3 +1,15 @@
+<style>
+  .box {
+    font: 10px sans-serif;
+	}
+
+	.box line,
+	.box rect,
+	.box circle {
+	  stroke: #000;
+	}
+</style>
+
 <a id="downloadLink">Download</a>
 <img id="fromcanvasPlot" />
 
@@ -54,6 +66,20 @@ $.extend(histOutputBinding, {
 	    var labelColor = data.labelColor;
 	    var batonNormalizedValues = data.batonNormalizedValues;
 	    var batonRealValues = data.batonRealValues;
+    } else if(plotType.localeCompare("Boxplot")==0) {
+      // Boxplot
+      var nbBox = data.nbBox;
+      var label = data.label;
+    	var labelColor = data.labelColor;
+    	var boxPlotNormalizedValues = data.boxPlotNormalizedValues;
+    	var boxPlotRealValues = data.boxPlotRealValues;
+    	var boxNormalizedExtremesValues= data.boxNormalizedExtremesValues;
+    	var boxRealExtremesValues= data.boxRealExtremesValues;
+    } else if(plotType.localeCompare("Color")==0) {
+      // Color
+      var activate = data.activate;
+      var colorNormalizedValues = data.colorNormalizedValues;
+    	var colorRealValues = data.colorRealValues;
     }
 
 
@@ -112,277 +138,494 @@ $.extend(histOutputBinding, {
       .attr("style"," display:block; margin:auto; margin-top:30px")
       .attr({width: w, height: h});
       
-      // Loop on rows
-      _.times(nbRows, function(n) {
-        var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
-        .data(d3.range(nbColumns))
-  			.enter().append('rect')
-				.attr({
-					class: function(d, i) {
-						return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
-					},
-					id: function(d, i) {
-						return 's-' + (n + 1) + (i + 1);
-					},
-					width: cellSize,
-					height: cellSize,
-					x: function(d, i) {
-						return i * cellSize;
-					},
-					y: n * cellSize,
-					fill: function(d, i) {
-						var indice = superclass[(n*nbColumns)+i];
-						return superclassColor[indice-1];
-					},
-					stroke: '#FDBB30'
-				});
+      ////////////////////////////////////////////////////////////////////////
+      // Square color plot
+      ////////////////////////////////////////////////////////////////////////
+      if (plotType.localeCompare("Color")==0) {
+    	_.times(nbRows, function(n) {	
+  			var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+  				.data(d3.range(nbColumns))
+  				.enter().append("g");
         
-        svg.selectAll('rect' + ' .row-' + (n + 1))
-        .data(d3.range(nbColumns))
-				.append('g')
-        
-        if (plotType.localeCompare("Radar")==0) {
-          //////////////////////////////////////////////////////////////////////
-          // Square Radar
-          ///////////////////////////////////////////////////////////////////////
-          var array = d3.range(nbColumns);
-          var width = cellSize*.5;
-          var height = cellSize*.5;
-          var radius = Math.min(width, height) / 2;
-          for (p = 0; p < array.length; p++) {
-            var arc = d3.svg.arc().outerRadius(function function_name(d,i) { 
-              return d.data.normalizedValue*0.4;});
-            var innerArrayNormalizedValues = [];
-            innerArrayNormalizedValues= radarNormalizedValues[(n*nbColumns)+p];
-            var innerArrayRealValues = [];
-            innerArrayRealValues= radarRealValues[(n*nbColumns)+p];
-            
-            var arrayValues = [];
-            for(var j=0; j<parts; j++){
-              arrayValues[j] = [];
-              arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-              arrayValues[j].realValue = innerArrayRealValues[j];
-            }
-            
-            var pie = d3.layout.pie()
-            .value(function(d) {  return 100/parts; })
-            .sort(null);
-            
-            var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
-            .data(pie(arrayValues))
-    				.enter()
-  					.append('path')
-  					.attr('d', arc)
-  					.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) +
-  						',' + (n * cellSize + cellSize/2) + ')')
-  					.attr('fill', function(d, i) {
-  						return labelColor[i];
-  					});
-            
-            // Mouse actions
-            rows.on('mouseover', function (d, i) {
-              var el = d3.select(this)
-              .transition()
-  						.duration(10)		  
-  						.style("fill-opacity", 0.8);
-  						
-              d3.select('#plot-message').text(function () {
-                var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + radarRealSize[(n*nbColumns)+i] + ' | ';
-                return ch;
-              });
-            });
-            rows.on('mouseout', function (d, i) {
-              var el = d3.select(this)
-              .transition()
-              .duration(1000)
-              .style("fill-opacity", 1);
-            });
-            pieParts.on('mouseenter', function (d, i) {
-              d3.select('#plot-message').text(function () { 
-                var innerArrayRealValues = [];
-                var ch=label[i]+": " + d.data.realValue;
-                return ch;	
-              }); 	
-              d3.select(this)
-  						.attr("stroke","white")
-  						.transition()
-  						.duration(50)
-  						.attr("stroke-width",2);
-            });
-            pieParts.on('mouseleave', function (d, i) {
-              d3.select(this).transition()
-  						.duration(50)
-  						.attr("stroke","none");
-            });
-          }
-        } else if (plotType.localeCompare("Camembert")==0) {
-          //////////////////////////////////////////////////////////////////////
-          // Square Pie
-          ///////////////////////////////////////////////////////////////////////
-          var array = d3.range(nbColumns);
-          var width = cellSize*.5;
-          var height = cellSize*.5;
-          var radius = Math.min(width, height) / 2;
-          for (p = 0; p < array.length; p++) {
-            var arc = d3.svg.arc().outerRadius(pieNormalizedSize[(n*nbColumns)+p]*(cellSize*50/100));
-            var innerArrayNormalizedValues = [];
-            innerArrayNormalizedValues= pieNormalizedValues[(n*nbColumns)+p];
-            var innerArrayRealValues = [];
-            innerArrayRealValues= pieRealValues[(n*nbColumns)+p];
-  						
-  					var arrayValues = [];
-  					for(var j=0; j<parts; j++){
-  						arrayValues[j] = [];
-  						arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-  						arrayValues[j].realValue = innerArrayRealValues[j];
-  					}
-  						
-  					var pie = d3.layout.pie()
-  						.value(function(d) { return d.normalizedValue; })
-  						.sort(null);
-  						
-  					var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
-  						.data(pie(arrayValues))
-  						.enter()
-  						.append('path')
-  						.attr('d', arc)
-  						.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) + ',' + (n * cellSize + cellSize/2) + ')')
-  						.attr('fill', function(d, i) { 
-  							return labelColor[i];
-  						});
-  
-  					rows.on('mouseover', function (d, i) {
-  						var el = d3.select(this)
-              .transition()
-              .duration(10)		  
-              .style("fill-opacity", 0.8);
+          rows.append('rect')
+    			.attr({
+    				class: function(d, i) {
+    					return 'Square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+    				},
+    				id: function(d, i) {
+    					return 's-' + (n + 1) + (i + 1);
+    				},
+    				width: cellSize,
+    				height: cellSize,
+    				x: function(d, i) {
+    					return i * cellSize;
+    				},
+    				y: n * cellSize,
+    				fill: function(d, i) {
+    					var red = 255;
+    					var green = parseInt((255-((colorNormalizedValues[(n*nbColumns)+i])*255)),10);
+    					var blue = 0;
+    					return "rgb("+red+","+green+","+blue+")";
+    				},
+    				stroke: '#FDBB30'
+    			});
+      		if(activate){ // Superclass numbers on cells for Color plot
+      			rows.append("text")
+      				.attr("x", function(d, i) { return i * cellSize + cellSize*45/100; })
+      				.attr("y", n * cellSize + cellSize*50/100)
+      				.text(function(d, i) { return superclass[n*nbColumns+i]; })
+      				.attr("font-family", "sans-serif")
+      				.attr("font-size", cellSize*20/100)
+      				.attr("fill", "#112E45");
+      		}
+      		rows.on('mouseover', function (d, i) {
+      			var el = d3.select(this)
+      				.transition()
+      				.duration(10)		  
+      				.style("fill-opacity", 0.8);
+      			d3.select('#plot-message').text(function () {
+      				var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' +  'value: ' + colorRealValues[(n*nbColumns)+i];
+      				return ch;
+      				}); 
+      		});
+      		rows.on('mouseout', function (d, i) {
+      			var el = d3.select(this)
+      				.transition()
+      				.duration(1000)
+      				.style("fill-opacity", 1);
+      		});
+      	});
+      } else {
+        //////////////////////////////////////////////////////////////////////
+        // Other square plots
+        //////////////////////////////////////////////////////////////////////
+
+        // Loop on rows
+        _.times(nbRows, function(n) {
+          var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
+          .data(d3.range(nbColumns))
+    			.enter().append('rect')
+    			.attr({
+    				class: function(d, i) {
+    					return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
+    				},
+    				id: function(d, i) {
+    					return 's-' + (n + 1) + (i + 1);
+    				},
+    				width: cellSize,
+    				height: cellSize,
+    				x: function(d, i) {
+    					return i * cellSize;
+    				},
+    				y: n * cellSize,
+    				fill: function(d, i) {
+    					var indice = superclass[(n*nbColumns)+i];
+    					return superclassColor[indice-1];
+    				},
+    				stroke: '#FDBB30'
+    			});
+
+          svg.selectAll('rect' + ' .row-' + (n + 1))
+          .data(d3.range(nbColumns))
+    			.append('g')
+          
+          if (plotType.localeCompare("Radar")==0) {
+            //////////////////////////////////////////////////////////////////////
+            // Square Radar
+            ///////////////////////////////////////////////////////////////////////
+            var array = d3.range(nbColumns);
+            var width = cellSize*.5;
+            var height = cellSize*.5;
+            var radius = Math.min(width, height) / 2;
+            for (p = 0; p < array.length; p++) {
+              var arc = d3.svg.arc().outerRadius(function function_name(d,i) { 
+                return d.data.normalizedValue*0.4;});
+              var innerArrayNormalizedValues = [];
+              innerArrayNormalizedValues= radarNormalizedValues[(n*nbColumns)+p];
+              var innerArrayRealValues = [];
+              innerArrayRealValues= radarRealValues[(n*nbColumns)+p];
               
-              d3.select('#plot-message').text(function () {
-  							var v = (n*nbColumns)+i;
-  							var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + pieRealSize[(n*nbColumns)+i];
-  							return ch;
-  						}); 
-  					});
-            rows.on('mouseout', function (d, i) {
-  						var el = d3.select(this)
-  							.transition()
-  							.duration(1000)
-  							.style("fill-opacity", 1);
-  					});
-            pieParts.on('mouseenter', function (d, i) {
-  						d3.select('#plot-message').text(function () { 
-  								var ch=label[i]+": " + d.data.realValue;
-  								return ch;	
-  						}); 	
-  						d3.select(this)
-              .attr("stroke","white")
-              .transition()
-              .duration(50)
-              .attr("stroke-width",1);
-            });
-            pieParts.on('mouseleave', function (d, i) {
-  						d3.select(this).transition()
-              .duration(50)
-              .attr("stroke","none");
-            });
-          }
-        } else if (plotType.localeCompare("Barplot")==0) {
-          //////////////////////////////////////////////////////////////////////
-          // Square Barplot
-          ///////////////////////////////////////////////////////////////////////
-          var k=0;
-      		var array = d3.range(nbColumns);
-    			var width = cellSize;
-    			var height = cellSize*.6;			
-          for (var cpt = 0; cpt < array.length; cpt++) { 	
-    					
-    				var innerArrayNormalizedValues= batonNormalizedValues[(n*nbColumns)+cpt];
-    				var innerArrayRealValues= batonRealValues[(n*nbColumns)+cpt];
-    					
-    				var arrayValues = [];
-    				for(var j=0; j<nbBatons; j++){
-    					arrayValues[j] = [];
-    					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-    					arrayValues[j].realValue = innerArrayRealValues[j];
-    				}	
-    							
-    				var y = d3.scale.linear()
-    					.domain([0,nbBatons])
-    					.range([0,height])
-    						
-    				var x = d3.scale.linear()
-    					.domain([0,nbBatons])
-    					.range([0,width])
-    							
-    							
-    				var xAxis = d3.svg.axis()
-    					.scale(x)
-    					.orient("bottom");
-    					
-    				var layout = d3.layout.pie()
-    						.value(function(d) { return d.normalizedValue; })
-    						.sort(null);
-    					
-    				var bars = svg.selectAll('rect' + ' .row-' + (n + 1))
-    					.data(layout(arrayValues))
-    					.enter()
-    					.append("rect")
-    					.attr("class", function(d, i) { 
-    						return "r"+i;
-    					})
-    					.attr("x", function (d, i) { 
-    						return i*((width-(cellSize*40/100))/nbBatons)+k+(cellSize*20/100); 
-    					})
-    					.attr("y", function (d, i) { return cellSize - (cellSize*5/100) - innerArrayNormalizedValues[i]*cellSize +n*cellSize; })
-    					.attr("width", function (d) { return ((width-(cellSize*40/100))/nbBatons)-(cellSize*2/100)})
-    					.attr("height", function (d, i) {return innerArrayNormalizedValues[i]*cellSize; })
-    					.attr("fill", function(d, i) {
-    							return labelColor[i];
+              var arrayValues = [];
+              for(var j=0; j<parts; j++){
+                arrayValues[j] = [];
+                arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+                arrayValues[j].realValue = innerArrayRealValues[j];
+              }
+              
+              var pie = d3.layout.pie()
+              .value(function(d) {  return 100/parts; })
+              .sort(null);
+              
+              var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
+              .data(pie(arrayValues))
+      				.enter()
+    					.append('path')
+    					.attr('d', arc)
+    					.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) +
+    						',' + (n * cellSize + cellSize/2) + ')')
+    					.attr('fill', function(d, i) {
+    						return labelColor[i];
     					});
-    					k+=cellSize;	
-    					
-    				rows.on('mouseover', function (d, i) {	
-    					d3.select('#plot-message').text(function () {
-    						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
-    						return ch;
-    						});
-    						
-    					var el = d3.select(this)
-    						.transition()
+              
+              // Mouse actions
+              rows.on('mouseover', function (d, i) {
+                var el = d3.select(this)
+                .transition()
     						.duration(10)		  
-    						.style("fill-opacity", 0.8);		 
-    				});
-    
-    				rows.on('mouseout', function (d, i) {
-    					var el = d3.select(this)
-    						.transition()
-    						.duration(1000)
-    						.style("fill-opacity", 1);
-    				});				
-    				
-    				bars.on('mouseenter', function (d, i) {
-    					d3.select('#plot-message').text(function () { 
-    						var ch=label[i]+": " + d.data.realValue;
-    						return ch;	
-    					});
+    						.style("fill-opacity", 0.8);
     						
-    					console.log(bars[0]);
-    					
-    					svg.selectAll("rect.r"+i)
+                d3.select('#plot-message').text(function () {
+                  var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + radarRealSize[(n*nbColumns)+i] + ' | ';
+                  return ch;
+                });
+              });
+              rows.on('mouseout', function (d, i) {
+                var el = d3.select(this)
+                .transition()
+                .duration(1000)
+                .style("fill-opacity", 1);
+              });
+              pieParts.on('mouseenter', function (d, i) {
+                d3.select('#plot-message').text(function () { 
+                  var innerArrayRealValues = [];
+                  var ch=label[i]+": " + d.data.realValue;
+                  return ch;	
+                }); 	
+                d3.select(this)
     						.attr("stroke","white")
     						.transition()
     						.duration(50)
     						.attr("stroke-width",2);
-    				});
-    
-    				bars.on('mouseleave', function (d, i) {
-    					svg.selectAll("rect.r"+i).transition()
+              });
+              pieParts.on('mouseleave', function (d, i) {
+                d3.select(this).transition()
     						.duration(50)
     						.attr("stroke","none");
-    				});	
-    			}
-        }
-      });
+              });
+            }
+          } else if (plotType.localeCompare("Camembert")==0) {
+            //////////////////////////////////////////////////////////////////////
+            // Square Pie
+            ///////////////////////////////////////////////////////////////////////
+            var array = d3.range(nbColumns);
+            var width = cellSize*.5;
+            var height = cellSize*.5;
+            var radius = Math.min(width, height) / 2;
+            for (p = 0; p < array.length; p++) {
+              var arc = d3.svg.arc().outerRadius(pieNormalizedSize[(n*nbColumns)+p]*(cellSize*50/100));
+              var innerArrayNormalizedValues = [];
+              innerArrayNormalizedValues= pieNormalizedValues[(n*nbColumns)+p];
+              var innerArrayRealValues = [];
+              innerArrayRealValues= pieRealValues[(n*nbColumns)+p];
+    						
+    					var arrayValues = [];
+    					for(var j=0; j<parts; j++){
+    						arrayValues[j] = [];
+    						arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+    						arrayValues[j].realValue = innerArrayRealValues[j];
+    					}
+    						
+    					var pie = d3.layout.pie()
+    						.value(function(d) { return d.normalizedValue; })
+    						.sort(null);
+    						
+    					var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
+    						.data(pie(arrayValues))
+    						.enter()
+    						.append('path')
+    						.attr('d', arc)
+    						.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) + ',' + (n * cellSize + cellSize/2) + ')')
+    						.attr('fill', function(d, i) { 
+    							return labelColor[i];
+    						});
+    
+    					rows.on('mouseover', function (d, i) {
+    						var el = d3.select(this)
+                .transition()
+                .duration(10)		  
+                .style("fill-opacity", 0.8);
+                
+                d3.select('#plot-message').text(function () {
+    							var v = (n*nbColumns)+i;
+    							var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + pieRealSize[(n*nbColumns)+i];
+    							return ch;
+    						}); 
+    					});
+              rows.on('mouseout', function (d, i) {
+    						var el = d3.select(this)
+    							.transition()
+    							.duration(1000)
+    							.style("fill-opacity", 1);
+    					});
+              pieParts.on('mouseenter', function (d, i) {
+    						d3.select('#plot-message').text(function () { 
+    								var ch=label[i]+": " + d.data.realValue;
+    								return ch;	
+    						}); 	
+    						d3.select(this)
+                .attr("stroke","white")
+                .transition()
+                .duration(50)
+                .attr("stroke-width",1);
+              });
+              pieParts.on('mouseleave', function (d, i) {
+    						d3.select(this).transition()
+                .duration(50)
+                .attr("stroke","none");
+              });
+            }
+          } else if (plotType.localeCompare("Barplot")==0) {
+            //////////////////////////////////////////////////////////////////////
+            // Square Barplot
+            ///////////////////////////////////////////////////////////////////////
+            var k=0;
+        		var array = d3.range(nbColumns);
+      			var width = cellSize;
+      			var height = cellSize*.6;			
+            for (var cpt = 0; cpt < array.length; cpt++) { 	
+      					
+      				var innerArrayNormalizedValues= batonNormalizedValues[(n*nbColumns)+cpt];
+      				var innerArrayRealValues= batonRealValues[(n*nbColumns)+cpt];
+      					
+      				var arrayValues = [];
+      				for(var j=0; j<nbBatons; j++){
+      					arrayValues[j] = [];
+      					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+      					arrayValues[j].realValue = innerArrayRealValues[j];
+      				}	
+      							
+      				var y = d3.scale.linear()
+      					.domain([0,nbBatons])
+      					.range([0,height])
+      						
+      				var x = d3.scale.linear()
+      					.domain([0,nbBatons])
+      					.range([0,width])
+      							
+      							
+      				var xAxis = d3.svg.axis()
+      					.scale(x)
+      					.orient("bottom");
+      					
+      				var layout = d3.layout.pie()
+      						.value(function(d) { return d.normalizedValue; })
+      						.sort(null);
+      					
+      				var bars = svg.selectAll('rect' + ' .row-' + (n + 1))
+      					.data(layout(arrayValues))
+      					.enter()
+      					.append("rect")
+      					.attr("class", function(d, i) { 
+      						return "r"+i;
+      					})
+      					.attr("x", function (d, i) { 
+      						return i*((width-(cellSize*40/100))/nbBatons)+k+(cellSize*20/100); 
+      					})
+      					.attr("y", function (d, i) { return cellSize - (cellSize*5/100) - innerArrayNormalizedValues[i]*cellSize +n*cellSize; })
+      					.attr("width", function (d) { return ((width-(cellSize*40/100))/nbBatons)-(cellSize*2/100)})
+      					.attr("height", function (d, i) {return innerArrayNormalizedValues[i]*cellSize; })
+      					.attr("fill", function(d, i) {
+      							return labelColor[i];
+      					});
+      					k+=cellSize;	
+      					
+      				rows.on('mouseover', function (d, i) {	
+      					d3.select('#plot-message').text(function () {
+      						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
+      						return ch;
+      						});
+      						
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(10)		  
+      						.style("fill-opacity", 0.8);		 
+      				});
+      
+      				rows.on('mouseout', function (d, i) {
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(1000)
+      						.style("fill-opacity", 1);
+      				});				
+      				
+      				bars.on('mouseenter', function (d, i) {
+      					d3.select('#plot-message').text(function () { 
+      						var ch=label[i]+": " + d.data.realValue;
+      						return ch;	
+      					});
+      						
+      					console.log(bars[0]);
+      					
+      					svg.selectAll("rect.r"+i)
+      						.attr("stroke","white")
+      						.transition()
+      						.duration(50)
+      						.attr("stroke-width",2);
+      				});
+      
+      				bars.on('mouseleave', function (d, i) {
+      					svg.selectAll("rect.r"+i).transition()
+      						.duration(50)
+      						.attr("stroke","none");
+      				});	
+      			}
+          } else  if (plotType.localeCompare("Boxplot")==0) {
+            //////////////////////////////////////////////////////////////////////
+            // Square Boxplot
+            ///////////////////////////////////////////////////////////////////////
+        		var width = (cellSize*80/100)/(nbBox)-(cellSize*10/100),
+      				height = (cellSize*70/100);
+      			if(nbBox==1){width = (cellSize*20/100);
+      						 height = (cellSize*40/100);}
+      			var min = Infinity,
+      				max = -Infinity;
+      			var chart = d3.box()
+      				.width(width)
+      				.height(height);
+      			var array = d3.range(nbColumns);
+      			
+      			for (p = 0; p < array.length; p++) {
+      				var innerArrayNormalizedValues = boxPlotNormalizedValues[(n*nbColumns)+p];
+      				var innerArrayRealValues = boxPlotRealValues[(n*nbColumns)+p];
+      				var innerArrayExtremesNormalizedValues = boxNormalizedExtremesValues[(n*nbColumns)+p];
+      				var innerArrayExtremesRealValues = boxRealExtremesValues[(n*nbColumns)+p];
+      
+      				var arrayValues = [];
+      				var data = [];
+      				
+      				for(var j=0; j<nbBox; j++){
+      					arrayValues[j] = [];
+      					arrayValues[j].normalizedValues = innerArrayNormalizedValues[j];
+      					arrayValues[j].realValues = innerArrayRealValues[j];
+      					
+      					var speed = arrayValues[j].normalizedValues;					
+      					for(l=0; l<5; l++){
+      						var e = Math.floor(j),
+      						r = Math.floor(l),
+      						s = Math.floor(speed[l]*cellSize),
+      						d = data[e];
+      						
+      						if (!d) { d = data[e] = [s];}
+      						else { d.push(s);}
+      						if (s > max) max = s;
+      						if (s < min) min = s;
+      					}
+      					data[j].realValues = arrayValues[j].realValues;
+      				}
+      				
+      				chart.domain([min, max]);
+      				
+      				var boxs = svg.selectAll('rect' + ' .row-' + (n + 1))
+      					.data(data)
+      					.enter().append("g")
+      					.attr("class", "box")
+      					.attr("width",  width)
+      					.attr("height", height)
+      					.append("g")
+      					.attr('transform', function(d, i) { 
+      						if(nbBox==1){
+      							return 'translate(' + (cellSize*40/100+i*((cellSize*40/100)/(nbBox)) + p*cellSize) + ',' + (n * cellSize + cellSize*30/100) + ')';
+      						}else{
+      							return 'translate(' + ((cellSize*15/100+i*((cellSize*80/100)/(nbBox))) + p*cellSize) + ',' + (n * cellSize + cellSize*15/100) + ')';
+      						}
+      					})
+      					.attr('fill', function(d, i) { 
+      							return labelColor[i];
+      					})
+      					.call(chart);
+      
+      				for(var j=0; j<nbBox; j++){
+      					
+      					var arrayExtremesValues = [];
+      					var arrNormalizedValues = innerArrayExtremesNormalizedValues[j];
+      					var arrRealValues = innerArrayExtremesRealValues[j];
+      					
+      					for(var l=0; l<arrNormalizedValues.length; l++){
+      						arrayExtremesValues[l] = [];
+      						arrayExtremesValues[l].normalizedValues = arrNormalizedValues[l];
+      						arrayExtremesValues[l].realValues = arrRealValues[l];
+      						arrayExtremesValues[l].label = label[j];
+      					}
+      					
+      					var focus = boxs.select("g.box")
+      						.data(arrayExtremesValues)
+      						.enter()
+      						.append("circle")
+      						.attr("class", "y")
+      						.attr('transform', function(d, i) { 
+      							if(nbBox==1){
+      								return 'translate(' + (cellSize*40/100+j*(cellSize*40/100) + width/2 + p*cellSize) + ',' + (cellSize*0.9 - d.normalizedValues*cellSize*0.9 + n * cellSize) + ')';
+      							}else{
+      								return 'translate(' + ((cellSize*15/100+j*((cellSize*80/100)/(nbBox)) + width/2) + p*cellSize) + ',' + (cellSize*0.90 - d.normalizedValues*cellSize*0.85 + n * cellSize) + ')';
+      							}
+      						})
+      						.attr("r", cellSize*4/100)
+      						.attr('fill', function(d, i) { 
+      								return labelColor[j];
+      						})
+      						.style("stroke", "#112E45")
+      						.attr("stroke-width",1);
+      					
+      					focus.on('mouseenter', function (d, i) {
+      						d3.select('#plot-message').text(function () { 
+      							var ch=d.label+": " + d.realValues;
+      							return ch;	
+      						});
+      									
+      						d3.select(this)
+      							.transition()
+      							.duration(50)
+      							.attr("stroke-width",2)
+      					});
+      
+      					focus.on('mouseleave', function (d, i) {
+      						d3.select(this).transition()
+      							.duration(50)
+      							.attr("stroke-width",1);
+      					});
+      				}
+      				
+      				
+      				rows.on('mouseover', function (d, i) {	
+      					d3.select('#plot-message').text(function () {
+      						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
+      						return ch;
+      						});
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(10)		  
+      						.style("fill-opacity", 0.8);		 
+      				});
+      				rows.on('mouseout', function (d, i) {
+      					var el = d3.select(this)
+      						.transition()
+      						.duration(1000)
+      						.style("fill-opacity", 1);
+      				});				
+      				boxs.on('mouseenter', function (d, i) {
+      					d3.select('#plot-message').text(function () { 
+      						var ch=label[i]+": " + d.realValues;
+      						return ch;	
+      					});
+      					d3.select(this)
+      						.transition()
+      						.duration(50)
+      						.attr("stroke-width",2)
+      				});
+      				boxs.on('mouseleave', function (d, i) {
+      					d3.select(this).transition()
+      						.duration(50)
+      						.attr("stroke-width",1);
+      				});
+      			}
+          } else if(plotType.localeCompare("Color")==0) {
+            //////////////////////////////////////////////////////////////////////
+            // Square Color
+            ///////////////////////////////////////////////////////////////////////
+            
+          }
+        });
+      }
     }
 
 
@@ -422,660 +665,77 @@ $.extend(histOutputBinding, {
 			.append("g")
 			.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
       
-      var hexa = svg.selectAll(".hexagon")
-			.data(hexbin(points))
-			.enter().append("path")
-			.attr("class", "hexagon")
-			.attr("d", function (d) {
-				return "M" + d.x + "," + d.y + hexbin.hexagon();
-			})
-			.attr("stroke", function (d,i) {
-				return "#fff";
-			})
-			.attr("stroke-width", "1px")
-			.style("fill", function (d,i) {
-				var indice = superclass[i];
-				return superclassColor[indice-1];
-			});
       
-      var array = d3.range(nbColumns);
-      var width = hexRadius;
-      var height = hexRadius;
-      var radius = Math.min(width, height)/ 2;
-      
-      svg.selectAll(".hexagon").data(d3.range(nbColumns)).append('g')
-      var coordinatesArray = hexbin(points);
-      
-      if (plotType.localeCompare("Radar")==0) {
-        //////////////////////////////////////////////////////////////////////////
-        // Hexagonal Radar
-        //////////////////////////////////////////////////////////////////////////
-        var array = d3.range(nbColumns);
-        var width = cellSize*.5;
-        var height = cellSize*.5;
-        var radius = Math.min(width, height) / 2;
-        for (var n = 0; n < nbRows*nbColumns; n++) {
-          var arc = d3.svg.arc().outerRadius(function function_name(d,i) { return d.data.normalizedValue*0.4;});
-          var innerArrayNormalizedValues = [];
-          innerArrayNormalizedValues= radarNormalizedValues[n];	
-          var innerArrayRealValues = [];
-          innerArrayRealValues= radarRealValues[n];
-          var arrayValues = [];
-          
-          for(var j=0; j<parts; j++){
-            arrayValues[j] = [];
-            arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-            arrayValues[j].realValue = innerArrayRealValues[j];
-          }
-          
-          var pie = d3.layout.pie()
-          .value(function(d) { return 100/parts; })
-          .sort(null);
-          
-          var pieParts = svg.append("g")
-  				.selectAll(".hexagon")
-  				.data(pie(arrayValues))
-  				.enter()
-  				.append('path')
-  				.attr("class", "pie")
-  				.attr('d', arc)
-  				.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
-  				.attr('fill', function(d, i) {
-  					return labelColor[i];
-  				})
-          
-          // Mouse actions
-          hexa.on('mouseover', function (d, i) {
-  				var el = d3.select(this)
-  					.transition()
-  					.duration(10)		  
-  					.style("fill-opacity", 0.8);
-            
-            d3.select('#plot-message').text(function () {
-              var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + radarRealSize[i];
-              return ch;
-            }); 
-          });
-          hexa.on('mouseout', function (d, i) {
-            var el = d3.select(this)
-  					.transition()
-  					.duration(1000)
-  					.style("fill-opacity", 1);
-          });
-          pieParts.on('mouseenter', function (d, i) {
-            d3.select('#plot-message').text(function () { 
-              var innerArrayRealValues = [];
-              var ch=label[i]+": " + d.data.realValue;
-              return ch;
-            });
-            d3.select(this)
-            .attr("stroke","white")
-            .transition()
-            .duration(50)
-            .attr("stroke-width",2);
-          });
-          pieParts.on('mouseleave', function (d, i) {
-            d3.select(this).transition()
-            .duration(50)
-            .attr("stroke","none");
-          });
-        }
-      } else if(plotType.localeCompare("Camembert")==0) {
-        //////////////////////////////////////////////////////////////////////////
-        // Hexagonal Pie
-        //////////////////////////////////////////////////////////////////////////
-        var array = d3.range(nbColumns);
-        var width = cellSize*.5;
-        var height = cellSize*.5;
-        var radius = Math.min(width, height) / 2;
-        for (var n = 0; n < nbRows*nbColumns; n++) {
-  				var arc = d3.svg.arc().outerRadius(pieNormalizedSize[n]*(cellSize*40/100));
-  				
-  				var innerArrayNormalizedValues = [];
-  				innerArrayNormalizedValues= pieNormalizedValues[n];	
-  				
-  				var innerArrayRealValues = [];
-  				innerArrayRealValues= pieRealValues[n];
-  				var arrayValues = [];
-  				
-  				for(var j=0; j<parts; j++){
-  					arrayValues[j] = [];
-  					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-  					arrayValues[j].realValue = innerArrayRealValues[j];
-  				}
-  
-  				var pie = d3.layout.pie()
-  					.value(function(d) { return d.normalizedValue; })
-  					.sort(null);
-  
-  				var pieParts = svg.append("g")
-  					.selectAll(".hexagon")
-  					.data(pie(arrayValues))
-  					.enter()
-  					.append('path')
-  					.attr("class", "pie")
-  					.attr('d', arc)
-  					.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
-  					.attr('fill', function(d, i) {
-  						return labelColor[i];
-  					})	
-  					
-  				hexa.on('mouseover', function (d, i) {
-  					var el = d3.select(this)
-  						.transition()
-  						.duration(10)		  
-  						.style("fill-opacity", 0.8);
-  									
-  					d3.select('#plot-message').text(function () {
-  						var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + pieRealSize[i];
-  						return ch;
-  					}); 
-  				});
-  				hexa.on('mouseout', function (d, i) {
-  					var el = d3.select(this)
-  						.transition()
-  						.duration(1000)
-  						.style("fill-opacity", 1);
-  					});
-          pieParts.on('mouseenter', function (d, i) {
-  					d3.select('#plot-message').text(function () { 
-  						var ch=label[i]+": " + d.data.realValue;
-  						return ch;	
-  					});
-            d3.select(this)
-  						.attr("stroke","white")
-  						.transition()
-  						.duration(50)
-  						.attr("stroke-width",1);
-  				});
-          pieParts.on('mouseleave', function (d, i) {
-  					d3.select(this).transition()
-  						.duration(50)
-  						.attr("stroke","none");
-  				});
-  			}	
-      } else if(plotType.localeCompare("Barplot")==0) {
-        //////////////////////////////////////////////////////////////////////////
-        // Hexagonal Barplot
-        //////////////////////////////////////////////////////////////////////////
-      	var array = d3.range(nbColumns);
-  			var width = cellSize;
-  			var height = cellSize*.6;			
-      	for (var indice = 0; indice < nbRows*nbColumns; indice++) {
-          var innerArrayNormalizedValues= batonNormalizedValues[indice];
-          var innerArrayRealValues= batonRealValues[indice];
-          var arrayValues = [];
-          for(var j=0; j<nbBatons; j++){
-    				arrayValues[j] = [];
-    				arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-    				arrayValues[j].realValue = innerArrayRealValues[j];
-    			}
-          var y = d3.scale.linear()
-    				.domain([0,nbBatons])
-    				.range([0,height])
-    						
-    			var x = d3.scale.linear()
-    				.domain([0,nbBatons])
-    				.range([0,width])
-    					
-    			var layout = d3.layout.pie()
-    					.value(function(d) { return d.normalizedValue; })
-    					.sort(null);
-    					
-    			var bars = svg.append("g").selectAll(".hexagon")
-    				.data(layout(arrayValues))
-    				.enter()
-    				.append("rect")
-    				.attr("class", function(d, i) { 
-    					return "r"+i;
-    				})
-    				.attr("x", function (d, i) { 
-    					return i*((width-(cellSize*40/100))/nbBatons)+(cellSize*20/100); 
-    				})
-    				.attr("y", function (d, i) { return -innerArrayNormalizedValues[i]*(cellSize*55/100)+cellSize*25/100; })
-    				.attr("width", function (d) { return ((width-(cellSize*40/100))/nbBatons)-(cellSize*2/100)})
-    				.attr("height", function (d, i) {return innerArrayNormalizedValues[i]*cellSize*55/100; })
-    				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y) + ')')
-    				.attr("fill", function(d, i) {
-    						return labelColor[i];
-    				});
+      if (plotType.localeCompare("Color")==0) {
+        ////////////////////////////////////////////////////////////////////////
+        // Hexagonal Color plot
+        ////////////////////////////////////////////////////////////////////////
+        var hexa = svg.selectAll(".hexagon")
+    			.data(hexbin(points))
+    			.enter().append("g");
     			
-    			hexa.on('mouseover', function (d, i) {	
-    				d3.select('#plot-message').text(function () {
-    					var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
-    					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[indice];
-    					return ch;
-    					});
-    					
-    				var el = d3.select(this)
-    					.transition()
-    					.duration(10)		  
-    					.style("fill-opacity", 0.8);		 
+    		var coordinatesArray = hexbin(points);
+    		
+    		hexa.append("path")
+    			.attr("class", "hexagon")
+    			.attr("d", function (d) {
+    				return "M" + d.x + "," + d.y + hexbin.hexagon();
+    			})
+    			.attr("stroke", function (d,i) {
+    				return "#fff";
+    			})
+    			.attr("stroke-width", "1px")
+    			.style("fill", function (d,i) {
+    				var red = 255;
+    				var green = parseInt((255-((colorNormalizedValues[i])*255)),10);
+    				var blue = 0;
+    				return "rgb("+red+","+green+","+blue+")";
     			});
-    
-    			hexa.on('mouseout', function (d, i) {
-    				var el = d3.select(this)
-    					.transition()
-    					.duration(1000)
-    					.style("fill-opacity", 1);
-    			});				
-    			bars.on('mouseenter', function (d, i) {
-    				d3.select('#plot-message').text(function () { 
-    					var ch=label[i]+": " + d.data.realValue;
-    					return ch;	
-    				});
-    				svg.selectAll("rect.r"+i)
-    					.attr("stroke","white")
-    					.transition()
-    					.duration(50)
-    					.attr("stroke-width",2);
-    			});
-    			bars.on('mouseleave', function (d, i) {
-    				svg.selectAll("rect.r"+i).transition()
-    						.duration(50)
-    						.attr("stroke","none");
-    			});	
-    					
+    		
+    		if(activate){
+    			hexa.append("text")
+    					.attr("x", function(d, i) { return coordinatesArray[i].x - cellSize*5/100 ; })
+    					.attr("y", function(d, i) { return coordinatesArray[i].y + cellSize*5/100 ; })
+    					.text(function(d, i) { return superclass[i]; })
+    					.attr("font-family", "sans-serif")
+    					.attr("font-size", cellSize*20/100)
+    					.attr("fill", "#112E45");
     		}
-      }
-    }
-    
-    ////////////////////////////////////////////////////////////////////////////
-    // Radar functions
-    ////////////////////////////////////////////////////////////////////////////
-    function radarSquareSizeGrid(){
-      var svg = d3.select('#thePlot').append('svg')
-      .attr("style"," display:block; margin:auto; margin-top:30px")
-      .attr({width: w, height: h});
-      
-      // Loop on rows
-      _.times(nbRows, function(n) {
-        var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
-        .data(d3.range(nbColumns))
-				.enter().append('rect')
-				.attr({
-					class: function(d, i) {
-						return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
-					},
-					id: function(d, i) {
-						return 's-' + (n + 1) + (i + 1);
-					},
-					width: cellSize,
-					height: cellSize,
-					x: function(d, i) {
-						return i * cellSize;
-					},
-					y: n * cellSize,
-					fill: function(d, i) {
-						var indice = superclass[(n*nbColumns)+i];
-						return superclassColor[indice-1];
-					},
-					stroke: '#FDBB30'
-				});
-        
-        var array = d3.range(nbColumns);
-        var width = cellSize*50/100;
-        var height = cellSize*50/100;
-        var radius = Math.min(width, height) / 2;
-        
-        svg.selectAll('rect' + ' .row-' + (n + 1))
-        .data(d3.range(nbColumns))
-				.append('g')
-        
-        // Inner loop on columns
-        for (p = 0; p < array.length; p++) {
-          var arc = d3.svg.arc().outerRadius(function function_name(d,i) { return d.data.normalizedValue*0.4;});
-          var innerArrayNormalizedValues = [];
-          innerArrayNormalizedValues= radarNormalizedValues[(n*nbColumns)+p];
-          var innerArrayRealValues = [];
-          innerArrayRealValues= radarRealValues[(n*nbColumns)+p];
-          
-          var arrayValues = [];
-          for(var j=0; j<parts; j++){
-            arrayValues[j] = [];
-            arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-            arrayValues[j].realValue = innerArrayRealValues[j];
-          }
-          
-          var pie = d3.layout.pie()
-          .value(function(d) {  return 100/parts; })
-          .sort(null);
-          
-          var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
-          .data(pie(arrayValues))
-					.enter()
-					.append('path')
-					.attr('d', arc)
-					.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) +
-						',' + (n * cellSize + cellSize/2) + ')')
-					.attr('fill', function(d, i) {
-						return labelColor[i];
-					});
-          
-          // Mouse actions
-          rows.on('mouseover', function (d, i) {
-            var el = d3.select(this)
-            .transition()
-						.duration(10)		  
-						.style("fill-opacity", 0.8);
-						
-            d3.select('#plot-message').text(function () {
-              var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + radarRealSize[(n*nbColumns)+i] + ' | ';
-              return ch;
-            });
-          });
-          rows.on('mouseout', function (d, i) {
-            var el = d3.select(this)
-            .transition()
-						.duration(1000)
-						.style("fill-opacity", 1);
-          });
-          pieParts.on('mouseenter', function (d, i) {
-					d3.select('#plot-message').text(function () { 
-						var innerArrayRealValues = [];
-						var ch=label[i]+": " + d.data.realValue;
-						return ch;	
-					}); 	
-					d3.select(this)
-						.attr("stroke","white")
-						.transition()
-						.duration(50)
-						.attr("stroke-width",2);
-          });
-          pieParts.on('mouseleave', function (d, i) {
-            d3.select(this).transition()
-						.duration(50)
-						.attr("stroke","none");
-          });
-        }
-      });
-    }
-    
-    function radarHexagonalGrid(){
-      var margin = {top: 30, right: 20, bottom: 20, left: 50};
-      var width = 850;
-      var height = 350;
-      var widtht = 850;
-      var heightt = 350;
-      var hexRadius=cellSize/2;	
-      var hexInRadius;	
-			
-      //Set the new height and width of the SVG based on the max possible
-      width = nbColumns*hexRadius*Math.sqrt(3);
-      height = nbRows*1.5*hexRadius+0.5*hexRadius;
-      //Set the hexagon radius
-      var hexbin = d3.hexbin().radius(hexRadius);
-      //Calculate the center positions of each hexagon	
-      var points = [];
-      for (var i = 0; i < nbRows; i++) {
-        for (var j = 0; j < nbColumns; j++) {
-          points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
-        }
-      }
-      
-      var svg = d3.select("#thePlot").append("svg")
-			.attr("width", width+hexRadius+5)
-			.attr("height", height)
-			.attr("style"," display:block; margin:auto; margin-top:30px;")
-			.append("g")
-			.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
-      
-      var hexa = svg.selectAll(".hexagon")
-			.data(hexbin(points))
-			.enter().append("path")
-			.attr("class", "hexagon")
-			.attr("d", function (d) {
-				return "M" + d.x + "," + d.y + hexbin.hexagon();
-			})
-			.attr("stroke", function (d,i) {
-				return "#fff";
-			})
-			.attr("stroke-width", "1px")
-			.style("fill", function (d,i) {
-				var indice = superclass[i];
-				return superclassColor[indice-1];
-			});
-      
-      var array = d3.range(nbColumns);
-      var width = hexRadius;
-      var height = hexRadius;
-      var radius = Math.min(width, height)/ 2;
-      
-      svg.selectAll(".hexagon").data(d3.range(nbColumns)).append('g')
-      var coordinatesArray = hexbin(points);
-      
-      // Loop on cells
-      for (var n = 0; n < nbRows*nbColumns; n++) {
-        var arc = d3.svg.arc().outerRadius(function function_name(d,i) { return d.data.normalizedValue*0.4;});
-        var innerArrayNormalizedValues = [];
-        innerArrayNormalizedValues= radarNormalizedValues[n];	
-        var innerArrayRealValues = [];
-        innerArrayRealValues= radarRealValues[n];
-        var arrayValues = [];
-        
-        for(var j=0; j<parts; j++){
-          arrayValues[j] = [];
-          arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-          arrayValues[j].realValue = innerArrayRealValues[j];
-        }
-        
-        var pie = d3.layout.pie()
-				.value(function(d) { return 100/parts; })
-				.sort(null);
-        
-        var pieParts = svg.append("g")
-				.selectAll(".hexagon")
-				.data(pie(arrayValues))
-				.enter()
-				.append('path')
-				.attr("class", "pie")
-				.attr('d', arc)
-				.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
-				.attr('fill', function(d, i) {
-					return labelColor[i];
-				})
-        
-        // Mouse actions
-        hexa.on('mouseover', function (d, i) {
-				var el = d3.select(this)
-					.transition()
-					.duration(10)		  
-					.style("fill-opacity", 0.8);
-          
-          d3.select('#plot-message').text(function () {
-            var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + radarRealSize[i];
-            return ch;
-          }); 
-        });
-        hexa.on('mouseout', function (d, i) {
-          var el = d3.select(this)
-					.transition()
-					.duration(1000)
-					.style("fill-opacity", 1);
-        });
-        pieParts.on('mouseenter', function (d, i) {
-          d3.select('#plot-message').text(function () { 
-            var innerArrayRealValues = [];
-            var ch=label[i]+": " + d.data.realValue;
-            return ch;
-          });
-          d3.select(this)
-					.attr("stroke","white")
-					.transition()
-					.duration(50)
-					.attr("stroke-width",2);
-        });
-        pieParts.on('mouseleave', function (d, i) {
-          d3.select(this).transition()
-          .duration(50)
-					.attr("stroke","none");
-        });
-      }
-    }
-    
-    ////////////////////////////////////////////////////////////////////////////
-    // Pie functions
-    ////////////////////////////////////////////////////////////////////////////
-    // Square Pie
-    function pieSquareGrid(){
-			var svg = d3.select('#thePlot').append('svg')
-				.attr("style"," display:block; margin:auto; margin-top:30px;")
-				.attr({
-					width: w,
-					height: h
-				});
-  
-			_.times(nbRows, function(n) {
-				
-				var rows = svg.selectAll('rect' + ' .row-' + (n + 1))
-					.data(d3.range(nbColumns))
-					.enter().append('rect')
-					.attr({
-						class: function(d, i) {
-							return 'square row-' + (n + 1) + ' ' + 'col-' + (i + 1);
-						},
-						id: function(d, i) {
-							return 's-' + (n + 1) + (i + 1);
-						},
-						width: cellSize,
-						height: cellSize,
-						x: function(d, i) {
-							return i * cellSize;
-						},
-						y: n * cellSize,
-						fill: function(d, i) {
-							var indice = superclass[(n*nbColumns)+i];
-							return superclassColor[indice-1];
-						},
-						stroke: '#FDBB30'
-					});
-
-				var array = d3.range(nbColumns);
-				var width = cellSize*50/100;
-				var height = cellSize*50/100;
-				var radius = Math.min(width, height) / 2;
-
-				svg.selectAll('rect' + ' .row-' + (n + 1))
-					 .data(d3.range(nbColumns))
-					 .append('g')
-							  
-				for (p = 0; p < array.length; p++) {   
-					var arc = d3.svg.arc().outerRadius(pieNormalizedSize[(n*nbColumns)+p]*(cellSize*50/100));
-					  
-					var innerArrayNormalizedValues = [];
-					innerArrayNormalizedValues= pieNormalizedValues[(n*nbColumns)+p];
-						
-					var innerArrayRealValues = [];
-					innerArrayRealValues= pieRealValues[(n*nbColumns)+p];
-						
-					var arrayValues = [];
-					for(var j=0; j<parts; j++){
-						arrayValues[j] = [];
-						arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-						arrayValues[j].realValue = innerArrayRealValues[j];
-					}
-						
-					var pie = d3.layout.pie()
-						.value(function(d) { return d.normalizedValue; })
-						.sort(null);
-						
-					var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
-						.data(pie(arrayValues))
-						.enter()
-						.append('path')
-						.attr('d', arc)
-						.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) + ',' + (n * cellSize + cellSize/2) + ')')
-						.attr('fill', function(d, i) { 
-							return labelColor[i];
-						});
-
-					rows.on('mouseover', function (d, i) {
-						var el = d3.select(this)
-							.transition()
-							.duration(10)		  
-							.style("fill-opacity", 0.8);
-									
-						d3.select('#plot-message').text(function () {
-							var v = (n*nbColumns)+i;
-							var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + pieRealSize[(n*nbColumns)+i];
-							return ch;
-						}); 
-					});
-
-					rows.on('mouseout', function (d, i) {
-						var el = d3.select(this)
-							.transition()
-							.duration(1000)
-							.style("fill-opacity", 1);
-					});
-							
-					pieParts.on('mouseenter', function (d, i) {
-						d3.select('#plot-message').text(function () { 
-								var ch=label[i]+": " + d.data.realValue;
-								return ch;	
-						}); 	
-									
-						d3.select(this)
-							.attr("stroke","white")
-							.transition()
-							.duration(50)
-							.attr("stroke-width",1);
-						});
-
-					pieParts.on('mouseleave', function (d, i) {
-						d3.select(this).transition()
-							.duration(50)
-							.attr("stroke","none");
-						});
-					}  
-			});
-		}
-    
-    // Hexagonal Pie
-  	function pieHexagonalGrid(){
-			var margin = {top: 30, right: 20, bottom: 20, left: 50};
-			var width = 850;
-			var height = 350;
-			var widtht = 850;
-			var heightt = 350;
-			var hexRadius=cellSize/2;	
-			var hexInRadius;	
-			
-			//Set the new height and width of the SVG based on the max possible
-			width = nbColumns*hexRadius*Math.sqrt(3);
-			height = nbRows*1.5*hexRadius+0.5*hexRadius;
-			//Set the hexagon radius
-			var hexbin = d3.hexbin().radius(hexRadius);
-			//Calculate the center positions of each hexagon	
-			var points = [];
-			for (var i = 0; i < nbRows; i++) {
-				for (var j = 0; j < nbColumns; j++) {
-					points.push([hexRadius * j * 1.75, hexRadius * i * 1.5]);
-				}
-			}
-
-			var svg = d3.select("#thePlot").append("svg")
-				.attr("width", width+hexRadius+5)
-				.attr("height", height)
-				.attr("style"," display:block; margin:auto; margin-top:30px;")
-				.append("g")
-				.attr("transform", "translate(" + hexRadius + "," + hexRadius+ ")");
-
-			var hexa = svg.selectAll(".hexagon")
-				.data(hexbin(points))
-				.enter().append("path")
-				.attr("class", "hexagon")
-				.attr("d", function (d) {
-					return "M" + d.x + "," + d.y + hexbin.hexagon();
-				})
-				.attr("stroke", function (d,i) {
-					return "#fff";
-				})
-				.attr("stroke-width", "1px")
-				.style("fill", function (d,i) {
-					var indice = superclass[i];
-					return superclassColor[indice-1];
-				});
+    				
+    		hexa.on('mouseover', function (d, i) {
+    			var el = d3.select(this)
+    				.transition()
+    				.duration(10)		  
+    				.style("fill-opacity", 0.8);
+    			d3.select('#plot-message').text(function () {
+    				return 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' +  'value: ' + colorRealValues[i];
+    			}); 
+    		});
+    		hexa.on('mouseout', function (d, i) {
+    			var el = d3.select(this)
+    				.transition()
+    				.duration(1000)
+    				.style("fill-opacity", 1);
+    		});			
+      } else {
+        ////////////////////////////////////////////////////////////////////////
+        // Other hexagonal plots
+        ////////////////////////////////////////////////////////////////////////
+        var hexa = svg.selectAll(".hexagon")
+    		.data(hexbin(points))
+  			.enter().append("path")
+  			.attr("class", "hexagon")
+  			.attr("d", function (d) {
+  				return "M" + d.x + "," + d.y + hexbin.hexagon();
+  			})
+  			.attr("stroke", function (d,i) {
+  				return "#fff";
+  			})
+  			.attr("stroke-width", "1px")
+  			.style("fill", function (d,i) {
+  				var indice = superclass[i];
+  				return superclassColor[indice-1];
+  			});
         
         var array = d3.range(nbColumns);
         var width = hexRadius;
@@ -1083,81 +743,390 @@ $.extend(histOutputBinding, {
         var radius = Math.min(width, height)/ 2;
         
         svg.selectAll(".hexagon").data(d3.range(nbColumns)).append('g')
-        
         var coordinatesArray = hexbin(points);
         
-        for (var n = 0; n < nbRows*nbColumns; n++) {
-				
-				var arc = d3.svg.arc().outerRadius(pieNormalizedSize[n]*(cellSize*40/100));
-				
-				var innerArrayNormalizedValues = [];
-				innerArrayNormalizedValues= pieNormalizedValues[n];	
-				
-				var innerArrayRealValues = [];
-				innerArrayRealValues= pieRealValues[n];
-				var arrayValues = [];
-				
-				for(var j=0; j<parts; j++){
-					arrayValues[j] = [];
-					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
-					arrayValues[j].realValue = innerArrayRealValues[j];
-				}
-
-				var pie = d3.layout.pie()
-					.value(function(d) { return d.normalizedValue; })
-					.sort(null);
-
-				var pieParts = svg.append("g")
-					.selectAll(".hexagon")
-					.data(pie(arrayValues))
-					.enter()
-					.append('path')
-					.attr("class", "pie")
-					.attr('d', arc)
-					.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
-					.attr('fill', function(d, i) {
-						return labelColor[i];
-					})	
-					
-				hexa.on('mouseover', function (d, i) {
-					var el = d3.select(this)
-						.transition()
-						.duration(10)		  
-						.style("fill-opacity", 0.8);
-									
-					d3.select('#plot-message').text(function () {
-						var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + pieRealSize[i];
-						return ch;
-					}); 
-				});
-
-				hexa.on('mouseout', function (d, i) {
-					var el = d3.select(this)
-						.transition()
-						.duration(1000)
-						.style("fill-opacity", 1);
-					});
-							
-				pieParts.on('mouseenter', function (d, i) {
-					d3.select('#plot-message').text(function () { 
-						var ch=label[i]+": " + d.data.realValue;
-						return ch;	
-					}); 	
-									
-					d3.select(this)
-						.attr("stroke","white")
-						.transition()
-						.duration(50)
-						.attr("stroke-width",1);
-				});
-
-				pieParts.on('mouseleave', function (d, i) {
-					d3.select(this).transition()
-						.duration(50)
-						.attr("stroke","none");
-				});
-			}		
-		}
+        if (plotType.localeCompare("Radar")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Radar
+          //////////////////////////////////////////////////////////////////////////
+          var array = d3.range(nbColumns);
+          var width = cellSize*.5;
+          var height = cellSize*.5;
+          var radius = Math.min(width, height) / 2;
+          for (var n = 0; n < nbRows*nbColumns; n++) {
+            var arc = d3.svg.arc().outerRadius(function function_name(d,i) { return d.data.normalizedValue*0.4;});
+            var innerArrayNormalizedValues = [];
+            innerArrayNormalizedValues= radarNormalizedValues[n];	
+            var innerArrayRealValues = [];
+            innerArrayRealValues= radarRealValues[n];
+            var arrayValues = [];
+            
+            for(var j=0; j<parts; j++){
+              arrayValues[j] = [];
+              arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+              arrayValues[j].realValue = innerArrayRealValues[j];
+            }
+            
+            var pie = d3.layout.pie()
+            .value(function(d) { return 100/parts; })
+            .sort(null);
+            
+            var pieParts = svg.append("g")
+    				.selectAll(".hexagon")
+    				.data(pie(arrayValues))
+    				.enter()
+    				.append('path')
+    				.attr("class", "pie")
+    				.attr('d', arc)
+    				.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
+    				.attr('fill', function(d, i) {
+    					return labelColor[i];
+    				})
+            
+            // Mouse actions
+            hexa.on('mouseover', function (d, i) {
+    				var el = d3.select(this)
+    					.transition()
+    					.duration(10)		  
+    					.style("fill-opacity", 0.8);
+              
+              d3.select('#plot-message').text(function () {
+                var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + radarRealSize[i];
+                return ch;
+              }); 
+            });
+            hexa.on('mouseout', function (d, i) {
+              var el = d3.select(this)
+    					.transition()
+    					.duration(1000)
+    					.style("fill-opacity", 1);
+            });
+            pieParts.on('mouseenter', function (d, i) {
+              d3.select('#plot-message').text(function () { 
+                var innerArrayRealValues = [];
+                var ch=label[i]+": " + d.data.realValue;
+                return ch;
+              });
+              d3.select(this)
+              .attr("stroke","white")
+              .transition()
+              .duration(50)
+              .attr("stroke-width",2);
+            });
+            pieParts.on('mouseleave', function (d, i) {
+              d3.select(this).transition()
+              .duration(50)
+              .attr("stroke","none");
+            });
+          }
+        } else if(plotType.localeCompare("Camembert")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Pie
+          //////////////////////////////////////////////////////////////////////////
+          var array = d3.range(nbColumns);
+          var width = cellSize*.5;
+          var height = cellSize*.5;
+          var radius = Math.min(width, height) / 2;
+          for (var n = 0; n < nbRows*nbColumns; n++) {
+    				var arc = d3.svg.arc().outerRadius(pieNormalizedSize[n]*(cellSize*40/100));
+    				
+    				var innerArrayNormalizedValues = [];
+    				innerArrayNormalizedValues= pieNormalizedValues[n];	
+    				
+    				var innerArrayRealValues = [];
+    				innerArrayRealValues= pieRealValues[n];
+    				var arrayValues = [];
+    				
+    				for(var j=0; j<parts; j++){
+    					arrayValues[j] = [];
+    					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+    					arrayValues[j].realValue = innerArrayRealValues[j];
+    				}
+    
+    				var pie = d3.layout.pie()
+    					.value(function(d) { return d.normalizedValue; })
+    					.sort(null);
+    
+    				var pieParts = svg.append("g")
+    					.selectAll(".hexagon")
+    					.data(pie(arrayValues))
+    					.enter()
+    					.append('path')
+    					.attr("class", "pie")
+    					.attr('d', arc)
+    					.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
+    					.attr('fill', function(d, i) {
+    						return labelColor[i];
+    					})	
+    					
+    				hexa.on('mouseover', function (d, i) {
+    					var el = d3.select(this)
+    						.transition()
+    						.duration(10)		  
+    						.style("fill-opacity", 0.8);
+    									
+    					d3.select('#plot-message').text(function () {
+    						var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + pieRealSize[i];
+    						return ch;
+    					}); 
+    				});
+    				hexa.on('mouseout', function (d, i) {
+    					var el = d3.select(this)
+    						.transition()
+    						.duration(1000)
+    						.style("fill-opacity", 1);
+    					});
+            pieParts.on('mouseenter', function (d, i) {
+    					d3.select('#plot-message').text(function () { 
+    						var ch=label[i]+": " + d.data.realValue;
+    						return ch;	
+    					});
+              d3.select(this)
+    						.attr("stroke","white")
+    						.transition()
+    						.duration(50)
+    						.attr("stroke-width",1);
+    				});
+            pieParts.on('mouseleave', function (d, i) {
+    					d3.select(this).transition()
+    						.duration(50)
+    						.attr("stroke","none");
+    				});
+    			}	
+        } else if(plotType.localeCompare("Barplot")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Barplot
+          //////////////////////////////////////////////////////////////////////////
+        	var array = d3.range(nbColumns);
+    			var width = cellSize;
+    			var height = cellSize*.6;			
+        	for (var indice = 0; indice < nbRows*nbColumns; indice++) {
+            var innerArrayNormalizedValues= batonNormalizedValues[indice];
+            var innerArrayRealValues= batonRealValues[indice];
+            var arrayValues = [];
+            for(var j=0; j<nbBatons; j++){
+      				arrayValues[j] = [];
+      				arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
+      				arrayValues[j].realValue = innerArrayRealValues[j];
+      			}
+            var y = d3.scale.linear()
+      				.domain([0,nbBatons])
+      				.range([0,height])
+      						
+      			var x = d3.scale.linear()
+      				.domain([0,nbBatons])
+      				.range([0,width])
+      					
+      			var layout = d3.layout.pie()
+      					.value(function(d) { return d.normalizedValue; })
+      					.sort(null);
+      					
+      			var bars = svg.append("g").selectAll(".hexagon")
+      				.data(layout(arrayValues))
+      				.enter()
+      				.append("rect")
+      				.attr("class", function(d, i) { 
+      					return "r"+i;
+      				})
+      				.attr("x", function (d, i) { 
+      					return i*((width-(cellSize*40/100))/nbBatons)+(cellSize*20/100); 
+      				})
+      				.attr("y", function (d, i) { return -innerArrayNormalizedValues[i]*(cellSize*55/100)+cellSize*25/100; })
+      				.attr("width", function (d) { return ((width-(cellSize*40/100))/nbBatons)-(cellSize*2/100)})
+      				.attr("height", function (d, i) {return innerArrayNormalizedValues[i]*cellSize*55/100; })
+      				.attr('transform', 'translate(' + (coordinatesArray[indice].x-cellSize/2) + ',' + (coordinatesArray[indice].y) + ')')
+      				.attr("fill", function(d, i) {
+      						return labelColor[i];
+      				});
+      			
+      			hexa.on('mouseover', function (d, i) {	
+      				d3.select('#plot-message').text(function () {
+      					var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
+      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[indice];
+      					return ch;
+      					});
+      					
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(10)		  
+      					.style("fill-opacity", 0.8);		 
+      			});
+      
+      			hexa.on('mouseout', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(1000)
+      					.style("fill-opacity", 1);
+      			});				
+      			bars.on('mouseenter', function (d, i) {
+      				d3.select('#plot-message').text(function () { 
+      					var ch=label[i]+": " + d.data.realValue;
+      					return ch;	
+      				});
+      				svg.selectAll("rect.r"+i)
+      					.attr("stroke","white")
+      					.transition()
+      					.duration(50)
+      					.attr("stroke-width",2);
+      			});
+      			bars.on('mouseleave', function (d, i) {
+      				svg.selectAll("rect.r"+i).transition()
+      						.duration(50)
+      						.attr("stroke","none");
+      			});	
+      					
+      		}
+        } else if(plotType.localeCompare("Boxplot")==0) {
+          //////////////////////////////////////////////////////////////////////////
+          // Hexagonal Boxplot
+          //////////////////////////////////////////////////////////////////////////
+        	var width = (cellSize*80/100)/(nbBox)-(cellSize*10/100),
+      			height = (cellSize*50/100);
+      		if(nbBox==1){width = (cellSize*20/100);
+      					 height = (cellSize*30/100);}
+      		var min = Infinity,
+      			max = -Infinity;
+      		var chart = d3.box()
+      			.width(width)
+      			.height(height);
+      		var array = d3.range(nbColumns);
+      		var coordinatesArray = hexbin(points);
+      	
+      		for (var p = 0; p < nbRows*nbColumns; p++) {	
+      			var innerArrayNormalizedValues = boxPlotNormalizedValues[p];
+      			var innerArrayRealValues = boxPlotRealValues[p];
+      			var innerArrayExtremesNormalizedValues = boxNormalizedExtremesValues[p];
+      			var innerArrayExtremesRealValues = boxRealExtremesValues[p];
+      				
+      			var arrayValues = [];
+      			var data = [];
+      			for(var j=0; j<nbBox; j++){
+      				arrayValues[j] = [];
+      				arrayValues[j].normalizedValues = innerArrayNormalizedValues[j];
+      				arrayValues[j].realValues = innerArrayRealValues[j];
+      					
+      				var speed = arrayValues[j].normalizedValues;
+      					
+      				for(l=0; l<5; l++){
+      					var e = Math.floor(j),
+      					r = Math.floor(l),
+      					s = Math.floor(speed[l]*cellSize),
+      					d = data[e];
+      					
+      					if (!d) { d = data[e] = [s];}
+      					else { d.push(s);}
+      					if (s > max) max = s;
+      					if (s < min) min = s;
+      				}
+      				data[j].realValues = arrayValues[j].realValues;
+      			}
+      
+      			chart.domain([min, max]);
+      				
+      			var boxs = svg.selectAll("hexagon")
+      				.data(data)
+      				.enter().append("g")
+      				.attr("class", "box")
+      				.attr("width",  width)
+      				.attr("height", height)
+      				.append("g")
+      				.attr('transform', function(d, i) { 
+      					if(nbBox==1){
+      						return 'translate(' + (cellSize*40/100+i*(cellSize*30/100) + coordinatesArray[p].x -cellSize/2) + ',' + (coordinatesArray[p].y - cellSize*15/100)+ ')';
+      					}else{
+      						return 'translate(' + ((cellSize*15/100+i*((cellSize*80/100)/(nbBox))) + coordinatesArray[p].x -cellSize/2) + ',' + (coordinatesArray[p].y - cellSize*25/100)+ ')';
+      					}
+      				})
+      				.attr('fill', function(d, i) { 
+      						return labelColor[i];
+      				})
+      				.call(chart);	
+      			
+      			for(var j=0; j<nbBox; j++){
+      				var arrayExtremesValues = [];
+      				var arrNormalizedValues = innerArrayExtremesNormalizedValues[j];
+      				var arrRealValues = innerArrayExtremesRealValues[j];
+      					
+      				for(var l=0; l<arrNormalizedValues.length; l++){
+      					arrayExtremesValues[l] = [];
+      					arrayExtremesValues[l].normalizedValues = arrNormalizedValues[l];
+      					arrayExtremesValues[l].realValues = arrRealValues[l]
+      					arrayExtremesValues[l].label = label[j];
+      				}
+      					
+      				var focus = boxs.select("g.box")
+      					.data(arrayExtremesValues)
+      					.enter()
+      					.append("circle")
+      					.attr("class", "y")
+      					.attr('transform', function(d, i) { 
+      						if(nbBox==1){
+      							return 'translate(' + (cellSize*40/100+j*(cellSize*40/100) + width/2 + coordinatesArray[p].x -cellSize/2) + ',' + (coordinatesArray[p].y + cellSize*25/100 - d.normalizedValues*cellSize*60/100) + ')';
+      						}else{
+      							return 'translate(' + ((cellSize*15/100+j*((cellSize*80/100)/(nbBox)) + width/2) + coordinatesArray[p].x -cellSize/2) + ',' + (coordinatesArray[p].y + cellSize*25/100 - d.normalizedValues*cellSize*52/100) + ')';
+      						}
+      					})
+      					.attr("r", cellSize*3/100)
+      					.attr('fill', function(d, i) { 
+      							return labelColor[j];
+      					})
+      					.style("stroke", "#112E45")
+      					.attr("stroke-width",1);
+      					
+      				focus.on('mouseenter', function (d, i) {
+      					d3.select('#plot-message').text(function () { 
+      						var ch=d.label+": " + d.realValues;
+      						return ch;	
+      					});
+      					d3.select(this)
+      						.transition()
+      						.duration(50)
+      						.attr("stroke-width",2)
+      				});
+      				focus.on('mouseleave', function (d, i) {
+      					d3.select(this).transition()
+      						.duration(50)
+      						.attr("stroke-width",1);
+      				});
+      			}
+      				
+      			hexa.on('mouseover', function (d, i) {	
+      				d3.select('#plot-message').text(function () {
+      					var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
+      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[indice];
+      					return ch;
+      					});
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(10)		  
+      					.style("fill-opacity", 0.8);		 
+      			});
+      			hexa.on('mouseout', function (d, i) {
+      				var el = d3.select(this)
+      					.transition()
+      					.duration(1000)
+      					.style("fill-opacity", 1);
+      			});				
+      			boxs.on('mouseenter', function (d, i) {
+      				d3.select('#plot-message').text(function () { 
+      					var ch=label[i]+": " + d.realValues;
+      					return ch;	
+      				});
+      				d3.select(this)
+      					.transition()
+      					.duration(50)
+      					.attr("stroke-width",2);
+      			});
+      			boxs.on('mouseleave', function (d, i) {
+      				d3.select(this).transition()
+      					.duration(50)
+      					.attr("stroke-width",1);
+      			});			
+      		}
+        }
+        
+      }
+    }
   }
 });
 Shiny.outputBindings.register(histOutputBinding, 'kohcorico');			

@@ -357,11 +357,13 @@ shinyServer(function(input, output, session) {
   
   ################################################
   output$thePlot <- reactive({
-    if (is.null(current.som()) | !(input$graphType %in% c("Radar", "Camembert", "Barplot")))
+    if (is.null(current.som()) | !(input$graphType %in% c("Radar", "Camembert",
+                                                          "Barplot", "Boxplot", 
+                                                          "Color")))
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
     
-    if (input$graphType %in% c("Radar", "Star", "Barplot")) {
+    if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot")) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
       data <- current.data()[rowSums(is.na(current.data()[, input$varchoice])) == 0, 
