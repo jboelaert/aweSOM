@@ -111,7 +111,7 @@ shinyUI(fluidPage(
     #                                               HTML('<div id="theStar" class="shiny-Star"><svg /></div>')), 
     #                              conditionalPanel('input.graphType == "Names"',
     #                                               includeHTML("NuageMot.html"), 
-    #                                               HTML('<div id="theWordcloud" class="shiny-Wordcloud"><svg /></div>'))))), 
+    #                                               HTML('<div id="theWordcloud" class="shiny-Wordcloud"><svg /></div>')))))
     tabPanel("Graph", 
              fluidRow(column(4, 
                              ## Sélection du graphique et des variables
