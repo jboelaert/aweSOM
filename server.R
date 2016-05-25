@@ -1,10 +1,12 @@
 ## 27/04/2016 : Shiny som sur iris - camemberts js
 
 library(kohonen)
+options(shiny.maxRequestSize=100*1024^2) # Max filesize
 
 ############################
 ## Fonction qui génère les paramètres à passer à JS
-getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
+getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
+                          normtype= c("range", "contrast")) {
   
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
@@ -38,18 +40,35 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
       data <- as.data.frame(sapply(data, as.numeric))
     
     nvar <- length(varnames)
-    normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
+    
     if (type %in% c("Radar", "Line", "Barplot", "Color", "Star")) {
-      normValues <- unname(lapply(split(normDat, clustering), 
-                                  function(x) {
-                                    if (!nrow(x)) return(rep(0, nvar))
-                                    unname(colMeans(x))
-                                  }))
-      realValues <- unname(lapply(split(data, clustering), 
-                                  function(x) {
-                                    if (!nrow(x)) return(rep(0, nvar))
-                                    unname(round(colMeans(x), 3))
-                                  }))
+      ## Means by cell
+      if (normtype == "range") {
+        ## "Range" normalization : data range to [0,1], then means
+        normDat <- as.data.frame(sapply(data, function(x) .05 + .9 * (x - min(x)) / (max(x) - min(x))))
+        normValues <- unname(lapply(split(normDat, clustering), 
+                                    function(x) {
+                                      if (!nrow(x)) return(rep(0, nvar))
+                                      unname(colMeans(x))
+                                    }))
+        realValues <- unname(lapply(split(data, clustering), 
+                                    function(x) {
+                                      if (!nrow(x)) return(rep(0, nvar))
+                                      unname(round(colMeans(x), 3))
+                                    }))
+      } else if (normtype == "contrast") {
+        ## "Contrast" normalization : means on data, then range(means) -> [0,1]
+        realValues <- do.call(rbind, lapply(split(data, clustering), 
+                                            function(x) {
+                                              if (!nrow(x)) return(rep(0, nvar))
+                                              unname(round(colMeans(x), 3))
+                                            }))
+        normValues <- apply(realValues, 2, function(x) .05 + .9 * (x - min(x)) / (max(x) - min(x)))
+        realValues <- unname(as.list(as.data.frame(t(realValues))))
+        normValues <- unname(as.list(as.data.frame(t(normValues))))
+      }
+    } else if (type == "Boxplot") {
+      normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
     }
   }
   
@@ -71,7 +90,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames) {
     res$parts <- nvar
     res$label <- varnames
     res$labelColor <- substr(rainbow(nvar), 1, 7)
-    res$radarNormalizedSize <- unname(.9 * (clust.table > 0))
+    res$radarNormalizedSize <- unname(clust.table > 0)
     res$radarRealSize <- unname(clust.table)
     res$radarNormalizedValues <- normValues
     res$radarRealValues <- realValues
@@ -214,7 +233,7 @@ shinyServer(function(input, output, session) {
   })
   
   ## Train the SOM when the button is hit
-  ok.som <- reactive({   
+  ok.som <- reactive({
     if (input$trainbutton > 0) {
       isolate({
         dat <- ok.data()[, input$varchoice]
@@ -326,7 +345,8 @@ shinyServer(function(input, output, session) {
       data <- ok.rownames()[ok.trainrows()]
     }
     
+    contrast <- ifelse(input$contrast, "contrast", "range")
     getPlotParams(input$graphType, ok.som(), ok.sc(), 
-                  data, input$plotSize, plotVar)
+                  data, input$plotSize, plotVar, contrast)
   })    
 })
