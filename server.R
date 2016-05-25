@@ -248,8 +248,9 @@ shinyServer(function(input, output, session) {
           dat[, input$varchoice] <- as.data.frame(sapply(dat[, input$varchoice], as.numeric))
         }
         rownames(dat) <- ok.rownames()
-        dat <- na.omit(dat)
-        res <- som(scale(dat), grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
+        dat <- as.matrix(na.omit(dat))
+        if (input$trainscale) dat <- scale(dat)
+        res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
         res$msg <- msg
         res
       })
@@ -301,15 +302,17 @@ shinyServer(function(input, output, session) {
   ## Sélection de variables (en fonction du graphique)
   output$plotVarOne <- renderUI({
     if (is.null(ok.data())) return()
-    selectInput("plotVarOne", "Plot variable:", choices= colnames(ok.data()))
+    selectInput("plotVarOne", "Plot variable:", choices= colnames(ok.data()), 
+                selected= ok.trainvars()[1])
   })
   output$plotVarMult <- renderUI({
     data <- ok.data()
     if (is.null(data)) return()
     tmp.numeric <- sapply(data, is.numeric)
     selectInput("plotVarMult", "Plot variable:", multiple= T,
-                choices= colnames(data)[tmp.numeric], 
-                selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
+                choices= colnames(data)[tmp.numeric],
+                # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
+                selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
   })
     
   ## Scree plot
@@ -342,7 +345,8 @@ shinyServer(function(input, output, session) {
       data <- NULL
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
-      data <- ok.rownames()[ok.trainrows()]
+      #       data <- ok.rownames()[ok.trainrows()]
+      data <- as.character(ok.data()[ok.trainrows(), input$plotVarOne])
     }
     
     contrast <- ifelse(input$contrast, "contrast", "range")
