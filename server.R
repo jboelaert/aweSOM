@@ -1,6 +1,8 @@
 ## 27/04/2016 : Shiny som sur iris - camemberts js
 
 library(kohonen)
+library(RColorBrewer)
+library(viridis)
 options(shiny.maxRequestSize=100*1024^2) # Max filesize
 
 ############################
@@ -17,7 +19,11 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
                    nbColumns= som$grid$ydim,
                    topology= ifelse(som$grid$topo == "rectangular", 
                                     'rectangular', "hexagonal"))
-  superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
+  #   superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
+  n.sc <- length(unique(superclass))
+  if (n.sc == 1) superclassColor <- "#FFFFFF"
+  if (n.sc == 2) superclassColor <- c("#FFC829", "#EC3A34")
+  if (n.sc > 2) superclassColor <- brewer.pal(n.sc, "Set3")
   
   res <- list(plotType= type, 
               saveToPng= TRUE, 
@@ -76,7 +82,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   if (type == "Camembert") {
     res$parts <- nvalues
     res$label <- unique.values
-    res$labelColor <- substr(rainbow(nvalues), 1, 7)
+    res$labelColor <- substr(viridis(nvalues), 1, 7)
     res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
     res$pieRealSize <- unname(clust.table)
     res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
@@ -89,7 +95,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   } else if (type == "Radar") {
     res$parts <- nvar
     res$label <- varnames
-    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    res$labelColor <- substr(viridis(nvar), 1, 7)
     res$radarNormalizedSize <- unname(clust.table > 0)
     res$radarRealSize <- unname(clust.table)
     res$radarNormalizedValues <- normValues
@@ -105,13 +111,13 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$nbBatons <- nvar
     res$isHist <- FALSE
     res$label <- varnames
-    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    res$labelColor <- substr(viridis(nvar), 1, 7)
     res$batonNormalizedValues <- normValues
     res$batonRealValues <- realValues
   } else if (type == "Boxplot") {
     res$nbBox <- nvar
     res$label <- varnames
-    res$labelColor <- substr(rainbow(nvar), 1, 7)
+    res$labelColor <- substr(viridis(nvar), 1, 7)
     
     boxes.norm <- lapply(split(normDat, clustering), boxplot, plot= F)
     boxes.real <- lapply(split(data, clustering), boxplot, plot= F)
