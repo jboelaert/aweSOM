@@ -15,8 +15,8 @@
 
 <script>
 
-var histOutputBinding = new Shiny.OutputBinding();
-$.extend(histOutputBinding, {
+var theOutputBinding = new Shiny.OutputBinding();
+$.extend(theOutputBinding, {
   find: function(scope) {
     return $(scope).find('.shiny-Plot');
   },
@@ -178,6 +178,9 @@ $.extend(histOutputBinding, {
     					return i * cellSize;
     				},
     				y: n * cellSize,
+//            fill: function(d, i) {
+//              return colorNormalizedValues[(n*nbColumns)+i]
+//            },
     				fill: function(d, i) {
     					var red = 255;
     					var green = parseInt((255-((colorNormalizedValues[(n*nbColumns)+i])*255)),10);
@@ -205,7 +208,7 @@ $.extend(histOutputBinding, {
       				return ch;
       				}); 
         		});
-        		rows.on('mouseout', function (d, i) {
+        	rows.on('mouseout', function (d, i) {
         			var el = d3.select(this)
         				.transition()
         				.duration(1000)
@@ -312,6 +315,7 @@ $.extend(histOutputBinding, {
     					},
     					stroke: '#FDBB30'
     				});
+            
     			var points = svg.selectAll('rect' + ' .row-' + (n + 1))
     				.data(d3.range(nbColumns))
     				.enter()
@@ -998,7 +1002,10 @@ $.extend(histOutputBinding, {
     			.attr("stroke", function (d,i) {
     				return "#fff";
     			})
-    			.attr("stroke-width", "1px")
+//    			.attr("stroke-width", "1px")
+//          .style("fill", function(d, i) {
+//              return colorNormalizedValues[(n*nbColumns)+i];
+//          });
     			.style("fill", function (d,i) {
     				var red = 255;
     				var green = parseInt((255-((colorNormalizedValues[i])*255)),10);
@@ -1709,5 +1716,5 @@ $.extend(histOutputBinding, {
     }
   }
 });
-Shiny.outputBindings.register(histOutputBinding, 'kohcorico');			
+Shiny.outputBindings.register(theOutputBinding, 'kohcorico');			
 </script>	

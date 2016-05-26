@@ -5,10 +5,26 @@ library(RColorBrewer)
 library(viridis)
 options(shiny.maxRequestSize=100*1024^2) # Max filesize
 
+getPalette <- function(pal, n) {
+  if(pal == "rainbow") return(substr(rainbow(n), 1, 7))
+  if(pal == "heat") return(substr(heat.colors(n), 1, 7))
+  if(pal == "terrain") return(substr(terrain.colors(n), 1, 7))
+  if(pal == "topo") return(substr(topo.colors(n), 1, 7))
+  if(pal == "cm") return(substr(cm.colors(n), 1, 7))
+  if (n == 1) return("#FFFFFF")
+  if (pal == "viridis") {
+    if (n == 2) return(substr(viridis(3), 1, 7)[c(1,3)])
+    return(substr(viridis(n), 1, 7))
+  } else {
+    if (n == 2) return(brewer.pal(3, pal)[c(1,3)])
+    return(brewer.pal(n, pal))
+  }
+}
+
 ############################
 ## Fonction qui génère les paramètres à passer à JS
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
-                          normtype= c("range", "contrast")) {
+                          normtype= c("range", "contrast"), palsc, palplot) {
   
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
@@ -21,9 +37,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
                                     'rectangular', "hexagonal"))
   #   superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
   n.sc <- length(unique(superclass))
-  if (n.sc == 1) superclassColor <- "#FFFFFF"
-  if (n.sc == 2) superclassColor <- c("#FFC829", "#EC3A34")
-  if (n.sc > 2) superclassColor <- brewer.pal(n.sc, "Set3")
+  superclassColor <- getPalette(palsc, n.sc)
   
   res <- list(plotType= type, 
               saveToPng= TRUE, 
@@ -73,6 +87,13 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
         realValues <- unname(as.list(as.data.frame(t(realValues))))
         normValues <- unname(as.list(as.data.frame(t(normValues))))
       }
+      #       if (type == "Color") {
+      #         ## 8 colors (equal-sized bins of values) of selected palette
+      #         normValues <- do.call(rbind, normValues)
+      #         normValues <- apply(normValues, 2, function(x) 
+      #           getPalette(palplot, 8)[cut(x, seq(.05, .95, length.out= 9))])
+      #         normValues <- unname(as.list(as.data.frame(t(normValues), stringsAsFactors= F)))
+      #       }
     } else if (type == "Boxplot") {
       normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
     }
@@ -82,7 +103,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   if (type == "Camembert") {
     res$parts <- nvalues
     res$label <- unique.values
-    res$labelColor <- substr(viridis(nvalues), 1, 7)
+    res$labelColor <- getPalette(palplot, nvalues)
     res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
     res$pieRealSize <- unname(clust.table)
     res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
@@ -95,7 +116,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   } else if (type == "Radar") {
     res$parts <- nvar
     res$label <- varnames
-    res$labelColor <- substr(viridis(nvar), 1, 7)
+    res$labelColor <- getPalette(palplot, nvar)
     res$radarNormalizedSize <- unname(clust.table > 0)
     res$radarRealSize <- unname(clust.table)
     res$radarNormalizedValues <- normValues
@@ -111,13 +132,13 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$nbBatons <- nvar
     res$isHist <- FALSE
     res$label <- varnames
-    res$labelColor <- substr(viridis(nvar), 1, 7)
+    res$labelColor <- getPalette(palplot, nvar)
     res$batonNormalizedValues <- normValues
     res$batonRealValues <- realValues
   } else if (type == "Boxplot") {
     res$nbBox <- nvar
     res$label <- varnames
-    res$labelColor <- substr(viridis(nvar), 1, 7)
+    res$labelColor <- getPalette(palplot, nvar)
     
     boxes.norm <- lapply(split(normDat, clustering), boxplot, plot= F)
     boxes.real <- lapply(split(data, clustering), boxplot, plot= F)
@@ -305,6 +326,12 @@ shinyServer(function(input, output, session) {
   ## Panel "Graph"
   #############################################################################
   
+  ## Update max nb superclasses
+  observe({
+    som <- ok.som()
+    updateNumericInput(session, "kohSuperclass", max= som$grid$xdim * som$grid$ydim)
+  })
+  
   ## Sélection de variables (en fonction du graphique)
   output$plotVarOne <- renderUI({
     if (is.null(ok.data())) return()
@@ -357,6 +384,7 @@ shinyServer(function(input, output, session) {
     
     contrast <- ifelse(input$contrast, "contrast", "range")
     getPlotParams(input$graphType, ok.som(), ok.sc(), 
-                  data, input$plotSize, plotVar, contrast)
+                  data, input$plotSize, plotVar, contrast, 
+                  input$palsc, input$palplot)
   })    
 })
