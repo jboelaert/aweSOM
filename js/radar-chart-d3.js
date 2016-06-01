@@ -191,7 +191,7 @@ var RadarChart = {
 						
 					d3.select(this).style("fill", "#C9E5FC");
 						
-					d3.select('#grid-ref').text(function () {
+					d3.select('#plot-message').text(function () {
 						var ch = d.axis+': ' + d.realValue;
 						return ch;
 					}); 
@@ -215,8 +215,7 @@ var RadarChart = {
 						.transition(200)
 						.style("fill-opacity", cfg.opacityArea);
 				  })
-		.append("svg:title")
-		.text(function(j){return Math.max(j.value, 0)});
+		.append("svg:title");
 
 	  series++;
 	});

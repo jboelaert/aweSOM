@@ -15,7 +15,10 @@
 * isolate train in var choice
 
 ## Wishlist
-* repère
+* U-matrix distance
+* Polygon distance
+* Distance to cell on mouse
+* grid
 * légende
 * save to html
 * mixScale
