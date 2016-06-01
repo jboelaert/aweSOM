@@ -45,6 +45,8 @@ $.extend(theOutputBinding, {
       var parts = data.parts;
       var label = data.label;
       var labelColor = data.labelColor;
+      if(!Array.isArray(label)) {label= [label];}
+      if(!Array.isArray(labelColor)) {labelColor= [labelColor];}
       var radarNormalizedSize = data.radarNormalizedSize;
       var radarRealSize = data.radarRealSize;
       var radarNormalizedValues = data.radarNormalizedValues;
@@ -54,6 +56,8 @@ $.extend(theOutputBinding, {
       var parts = data.parts;
       var label = data.label;
       var labelColor = data.labelColor;
+      if(!Array.isArray(label)) {label= [label];}
+      if(!Array.isArray(labelColor)) {labelColor= [labelColor];}
       var pieNormalizedSize = data.pieNormalizedSize;
       var pieRealSize = data.pieRealSize;
       var pieNormalizedValues = data.pieNormalizedValues;
@@ -64,6 +68,8 @@ $.extend(theOutputBinding, {
       var isHist = data.isHist;
 	    var label = data.label;
 	    var labelColor = data.labelColor;
+      if(!Array.isArray(label)) {label= [label];}
+      if(!Array.isArray(labelColor)) {labelColor= [labelColor];}
 	    var batonNormalizedValues = data.batonNormalizedValues;
 	    var batonRealValues = data.batonRealValues;
     } else if(plotType.localeCompare("Boxplot")==0) {
@@ -71,6 +77,8 @@ $.extend(theOutputBinding, {
       var nbBox = data.nbBox;
       var label = data.label;
     	var labelColor = data.labelColor;
+      if(!Array.isArray(label)) {label= [label];}
+      if(!Array.isArray(labelColor)) {labelColor= [labelColor];}
     	var boxPlotNormalizedValues = data.boxPlotNormalizedValues;
     	var boxPlotRealValues = data.boxPlotRealValues;
     	var boxNormalizedExtremesValues= data.boxNormalizedExtremesValues;
@@ -84,6 +92,7 @@ $.extend(theOutputBinding, {
       // Star
       var nbSommet = data.nbSommet;
       var label = data.label;
+      if(!Array.isArray(label)) {label= [label];}
     	var starPlotNormalizedValues = data.starPlotNormalizedValues;
     	var starPlotRealValues = data.starPlotRealValues;
     } else if(plotType.localeCompare("Hitmap")==0) {
@@ -361,7 +370,7 @@ $.extend(theOutputBinding, {
     				.style("stroke", "#112E45");
     			
     			rows.on('mousemove', function (d, i) {	
-    				console.log(i);
+    				//console.log(i);
     				for(var k=0; k<nbRows; k++){
     					for(var l=0; l<nbColumns; l++){
     						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
@@ -596,6 +605,13 @@ $.extend(theOutputBinding, {
       					
       				var innerArrayNormalizedValues= batonNormalizedValues[(n*nbColumns)+cpt];
       				var innerArrayRealValues= batonRealValues[(n*nbColumns)+cpt];
+      				// Check if single variable
+      				if (!Array.isArray(innerArrayNormalizedValues)) {
+      				  innerArrayNormalizedValues= [innerArrayNormalizedValues];
+      				}
+      				if (!Array.isArray(innerArrayRealValues)) {
+      				  innerArrayRealValues= [innerArrayRealValues];
+      				}
       					
       				var arrayValues = [];
       				for(var j=0; j<nbBatons; j++){
@@ -664,7 +680,7 @@ $.extend(theOutputBinding, {
       						return ch;	
       					});
       						
-      					console.log(bars[0]);
+      					//console.log(bars[0]);
       					
       					svg.selectAll("rect.r"+i)
       						.attr("stroke","white")
@@ -836,6 +852,14 @@ $.extend(theOutputBinding, {
         		for (p = 0; p < array.length; p++) {   
       				var innerArrayNormalizedValues= starPlotNormalizedValues[(n*nbColumns)+p];	
       				var innerArrayRealValues= starPlotRealValues[(n*nbColumns)+p];	
+      				// Check if single variable
+      				if (!Array.isArray(innerArrayNormalizedValues)) {
+      				  innerArrayNormalizedValues= [innerArrayNormalizedValues];
+      				}
+      				if (!Array.isArray(innerArrayRealValues)) {
+      				  innerArrayRealValues= [innerArrayRealValues];
+      				}
+
       				var arrayValues = new Array(1);
       				arrayValues[0] = new Array(nbSommet);
       				for(var j=0; j<nbSommet; j++){
@@ -1264,6 +1288,13 @@ $.extend(theOutputBinding, {
         	for (var indice = 0; indice < nbRows*nbColumns; indice++) {
             var innerArrayNormalizedValues= batonNormalizedValues[indice];
             var innerArrayRealValues= batonRealValues[indice];
+    				// Check if single variable
+    				if (!Array.isArray(innerArrayNormalizedValues)) {
+    				  innerArrayNormalizedValues= [innerArrayNormalizedValues];
+    				}
+    				if (!Array.isArray(innerArrayRealValues)) {
+    				  innerArrayRealValues= [innerArrayRealValues];
+    				}
             var arrayValues = [];
             for(var j=0; j<nbBatons; j++){
       				arrayValues[j] = [];
@@ -1493,6 +1524,13 @@ $.extend(theOutputBinding, {
       				
       			var innerArrayNormalizedValues= starPlotNormalizedValues[p];	
       			var innerArrayRealValues= starPlotRealValues[p];	
+    				// Check if single variable
+    				if (!Array.isArray(innerArrayNormalizedValues)) {
+    				  innerArrayNormalizedValues= [innerArrayNormalizedValues];
+    				}
+    				if (!Array.isArray(innerArrayRealValues)) {
+    				  innerArrayRealValues= [innerArrayRealValues];
+    				}
       				
       			var arrayValues = new Array(1);
       			arrayValues[0] = new Array(nbSommet);

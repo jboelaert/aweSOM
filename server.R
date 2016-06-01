@@ -11,11 +11,12 @@ getPalette <- function(pal, n) {
   if(pal == "terrain") return(substr(terrain.colors(n), 1, 7))
   if(pal == "topo") return(substr(topo.colors(n), 1, 7))
   if(pal == "cm") return(substr(cm.colors(n), 1, 7))
-  if (n == 1) return("#FFFFFF")
   if (pal == "viridis") {
+    if (n == 1) return(substr(viridis(3), 1, 7)[1])
     if (n == 2) return(substr(viridis(3), 1, 7)[c(1,3)])
     return(substr(viridis(n), 1, 7))
   } else {
+    if (n == 1) return(brewer.pal(3, pal)[1])
     if (n == 2) return(brewer.pal(3, pal)[c(1,3)])
     return(brewer.pal(n, pal))
   }
