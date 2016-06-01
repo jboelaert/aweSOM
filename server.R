@@ -87,13 +87,12 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
         realValues <- unname(as.list(as.data.frame(t(realValues))))
         normValues <- unname(as.list(as.data.frame(t(normValues))))
       }
-      #       if (type == "Color") {
-      #         ## 8 colors (equal-sized bins of values) of selected palette
-      #         normValues <- do.call(rbind, normValues)
-      #         normValues <- apply(normValues, 2, function(x) 
-      #           getPalette(palplot, 8)[cut(x, seq(.05, .95, length.out= 9))])
-      #         normValues <- unname(as.list(as.data.frame(t(normValues), stringsAsFactors= F)))
-      #       }
+      if (type == "Color") {
+        ## 8 colors (equal-sized bins of values) of selected palette
+        normValues <- do.call(rbind, normValues)
+        normValues <- apply(normValues, 2, function(x) 
+          getPalette(palplot, 8)[cut(x, seq(.049, .951, length.out= 9))])
+      }
     } else if (type == "Boxplot") {
       normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
     }

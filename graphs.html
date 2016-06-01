@@ -178,14 +178,8 @@ $.extend(theOutputBinding, {
     					return i * cellSize;
     				},
     				y: n * cellSize,
-//            fill: function(d, i) {
-//              return colorNormalizedValues[(n*nbColumns)+i]
-//            },
     				fill: function(d, i) {
-    					var red = 255;
-    					var green = parseInt((255-((colorNormalizedValues[(n*nbColumns)+i])*255)),10);
-    					var blue = 0;
-    					return "rgb("+red+","+green+","+blue+")";
+              return colorNormalizedValues[(n*nbColumns)+i];
     				},
     				stroke: '#FDBB30'
     			});
@@ -1002,15 +996,8 @@ $.extend(theOutputBinding, {
     			.attr("stroke", function (d,i) {
     				return "#fff";
     			})
-//    			.attr("stroke-width", "1px")
-//          .style("fill", function(d, i) {
-//              return colorNormalizedValues[(n*nbColumns)+i];
-//          });
     			.style("fill", function (d,i) {
-    				var red = 255;
-    				var green = parseInt((255-((colorNormalizedValues[i])*255)),10);
-    				var blue = 0;
-    				return "rgb("+red+","+green+","+blue+")";
+            return colorNormalizedValues[i];
     			});
     		
     		if(activate){

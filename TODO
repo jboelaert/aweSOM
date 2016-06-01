@@ -1,0 +1,34 @@
+## TODO
+* Help contrast
+* One var barplot, etc.
+* Boxplot message
+* Fix names : tous ne s'affichent pas
+* Msgbox pour nom des individus
+* SVG save
+* highlight all
+* Warning une seule colonne csv
+* File locale
+* save R session
+* save data with clustering
+* Energy, Kaski-Lagus
+* Train options
+* Contrast : 0 / NA (empty cells)
+* isolate train in var choice
+
+## Wishlist
+* repère
+* légende
+* save to html
+* mixScale
+* call from R : kohonen, sombrero, ...
+* Relational SOM
+* Additional variables : 2 kinds
+
+#2. Graph> Line : Point value : qu'est-ce que c'est?
+#4. Graph > Color : A quoi correspondent les couleurs indiquées?
+
+7. Graph > Names:
+- Sur mon jeu de données test, des noms ne sont pas présents (j'ai une case vide, alors que j'avais 3 personnes dedans)
+
+
+
