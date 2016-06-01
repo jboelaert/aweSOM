@@ -1,6 +1,7 @@
 ## TODO
 * Help contrast
-* Boxplot message
+* Contrast : 0 / NA (empty cells)
+* Barplot hex norm : 0-1
 * Fix names : tous ne s'affichent pas
 * Msgbox pour nom des individus
 * SVG save
@@ -11,7 +12,6 @@
 * save data with clustering
 * Energy, Kaski-Lagus
 * Train options
-* Contrast : 0 / NA (empty cells)
 * isolate train in var choice
 
 ## Wishlist

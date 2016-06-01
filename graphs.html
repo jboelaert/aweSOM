@@ -370,7 +370,6 @@ $.extend(theOutputBinding, {
     				.style("stroke", "#112E45");
     			
     			rows.on('mousemove', function (d, i) {	
-    				//console.log(i);
     				for(var k=0; k<nbRows; k++){
     					for(var l=0; l<nbColumns; l++){
     						innerArrayNormalizedValues= lineNormalizedValues[(k*nbColumns)+l];				
@@ -680,8 +679,6 @@ $.extend(theOutputBinding, {
       						return ch;	
       					});
       						
-      					//console.log(bars[0]);
-      					
       					svg.selectAll("rect.r"+i)
       						.attr("stroke","white")
       						.transition()
@@ -830,7 +827,8 @@ $.extend(theOutputBinding, {
       				});				
       				boxs.on('mouseenter', function (d, i) {
       					d3.select('#plot-message').text(function () { 
-      						var ch=label[i]+": " + d.realValues;
+      						var ch=label[i]+ ": Q1= " + d.realValues[1] + " ; Med= " +
+      							  d.realValues[2] + " ; Q3= " + d.realValues[3];
       						return ch;	
       					});
       					d3.select(this)
@@ -1389,14 +1387,14 @@ $.extend(theOutputBinding, {
       			var innerArrayRealValues = boxPlotRealValues[p];
       			var innerArrayExtremesNormalizedValues = boxNormalizedExtremesValues[p];
       			var innerArrayExtremesRealValues = boxRealExtremesValues[p];
-      				
+
       			var arrayValues = [];
       			var data = [];
       			for(var j=0; j<nbBox; j++){
       				arrayValues[j] = [];
       				arrayValues[j].normalizedValues = innerArrayNormalizedValues[j];
       				arrayValues[j].realValues = innerArrayRealValues[j];
-      					
+
       				var speed = arrayValues[j].normalizedValues;
       					
       				for(l=0; l<5; l++){
@@ -1501,7 +1499,8 @@ $.extend(theOutputBinding, {
       			});				
       			boxs.on('mouseenter', function (d, i) {
       				d3.select('#plot-message').text(function () { 
-      					var ch=label[i]+": " + d.realValues;
+    						var ch=label[i]+ ": Q1= " + d.realValues[1] + " ; Med= " +
+    							  d.realValues[2] + " ; Q3= " + d.realValues[3];
       					return ch;	
       				});
       				d3.select(this)

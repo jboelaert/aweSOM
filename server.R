@@ -56,7 +56,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     if (is.null(dim(data))) {
       data <- data.frame(data)
       colnames(data) <- varnames
-    }
+    } else data <- as.data.frame(data)
     if (type == "Color") 
       data <- as.data.frame(sapply(data, as.numeric))
     
@@ -96,6 +96,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
       }
     } else if (type == "Boxplot") {
       normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
+      data <- as.data.frame(apply(data, 2, as.numeric)) # To prevent weird JS error (when a type is integer)
     }
   }
   
@@ -145,7 +146,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$boxPlotNormalizedValues <- unname(lapply(boxes.norm, function(x) unname(as.list(as.data.frame(x$stats)))))
     res$boxPlotRealValues <- unname(lapply(boxes.real, function(x) unname(as.list(as.data.frame(x$stats)))))
     res$boxNormalizedExtremesValues <- unname(lapply(boxes.norm, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
-    res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
+    res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) as.list(unname(split(x$out, factor(x$group, levels= 1:nvar))))))
   } else if (type == "Color") {
     res$activate <- TRUE
     res$colorNormalizedValues <- normValues
