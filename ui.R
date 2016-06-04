@@ -1,4 +1,5 @@
 ## 27/04/2016 : Shiny som sur iris - camemberts js
+library(RColorBrewer)
 
 
 ## Organisation de la page

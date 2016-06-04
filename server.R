@@ -96,7 +96,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
       }
     } else if (type == "Boxplot") {
       normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))
-      data <- as.data.frame(apply(data, 2, as.numeric)) # To prevent weird JS error (when a type is integer)
+      data <- as.data.frame(apply(data, 2, as.numeric)) # To prevent weird JS error (when a type is in integer)
     }
   }
   

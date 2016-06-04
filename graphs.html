@@ -477,7 +477,10 @@ $.extend(theOutputBinding, {
               var pieParts = svg.selectAll('rect' + ' .row-' + (n + 1))
               .data(pie(arrayValues))
       				.enter()
-    					.append('path')
+      				.append("path")
+    					.attr("class", function(d, i) { 
+      					return "r"+i;
+            	})
     					.attr('d', arc)
     					.attr('transform', 'translate(' + (array[p] * cellSize + cellSize/2) +
     						',' + (n * cellSize + cellSize/2) + ')')
@@ -509,16 +512,18 @@ $.extend(theOutputBinding, {
                   var ch=label[i]+": " + d.data.realValue;
                   return ch;	
                 }); 	
-                d3.select(this)
+              svg.selectAll("path.r"+i)
     						.attr("stroke","white")
     						.transition()
     						.duration(50)
     						.attr("stroke-width",2);
               });
               pieParts.on('mouseleave', function (d, i) {
-                d3.select(this).transition()
-    						.duration(50)
-    						.attr("stroke","none");
+//                d3.select(this)
+                svg.selectAll("path.r"+i)
+                  .transition()
+      						.duration(50)
+    	  					.attr("stroke","none");
               });
             }
           } else if (plotType.localeCompare("Camembert")==0) {
@@ -1159,7 +1164,9 @@ $.extend(theOutputBinding, {
     				.data(pie(arrayValues))
     				.enter()
     				.append('path')
-    				.attr("class", "pie")
+    				.attr("class", function(d, i) { 
+      					return "r"+i;
+          	})
     				.attr('d', arc)
     				.attr('transform', 'translate(' + (coordinatesArray[n].x) +',' + coordinatesArray[n].y + ')')
     				.attr('fill', function(d, i) {
@@ -1190,16 +1197,17 @@ $.extend(theOutputBinding, {
                 var ch=label[i]+": " + d.data.realValue;
                 return ch;
               });
-              d3.select(this)
-              .attr("stroke","white")
-              .transition()
-              .duration(50)
-              .attr("stroke-width",2);
+              svg.selectAll("path.r"+i)
+                .attr("stroke","white")
+                .transition()
+                .duration(50)
+                .attr("stroke-width",2);
             });
             pieParts.on('mouseleave', function (d, i) {
-              d3.select(this).transition()
-              .duration(50)
-              .attr("stroke","none");
+              svg.selectAll("path.r"+i)
+                .transition()
+                .duration(50)
+                .attr("stroke","none");
             });
           }
         } else if(plotType.localeCompare("Camembert")==0) {
