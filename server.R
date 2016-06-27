@@ -278,7 +278,9 @@ shinyServer(function(input, output, session) {
         rownames(dat) <- ok.rownames()
         dat <- as.matrix(na.omit(dat))
         if (input$trainscale) dat <- scale(dat)
-        res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo))
+        init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
+        res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
+                   init= init)
         res$msg <- msg
         res
       })

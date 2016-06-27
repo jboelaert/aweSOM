@@ -2,8 +2,10 @@
 * Help contrast
 * One superclass color
 * Contrast : 0 / NA (empty cells)
+* Star categorical realValue (ex : frondeur 1.62)
 * Barplot hex norm : 0-1
 * Boxplot, Star : empty cells -> NA
+* Boplot : option show outliers
 * Fix names : tous ne s'affichent pas
 * Msgbox pour nom des individus
 * SVG save
@@ -20,6 +22,7 @@
 ## Wishlist
 * U-matrix distance
 * Polygon distance
+* PCA initialization
 * Distance to cell on mouse
 * grid
 * légende

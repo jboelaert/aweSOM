@@ -143,13 +143,190 @@ $.extend(theOutputBinding, {
     // Call grid following topology and type
     if(topology.localeCompare('rectangular')==0){
       commonSquareGrid();
-      // if(plotType.localeCompare("Radar")==0) radarSquareSizeGrid();
-      // if(plotType.localeCompare("Camembert")==0) pieSquareGrid();
-    }else if(topology.localeCompare('hexagonal')==0){
+    } else if(topology.localeCompare('hexagonal')==0){
       commonHexGrid();
-      // if(plotType.localeCompare("Radar")==0) radarHexagonalGrid();
-      // if(plotType.localeCompare("Camembert")==0) pieHexagonalGrid();
     }
+    
+    // Star function
+    if(plotType.localeCompare("Star")==0) { 
+      function StarChart(id, d, options) {
+        var cfg = {
+      	 radius: 5,
+      	 w: 600,
+      	 h: 600,
+      	 factor: 1,
+      	 factorLegend: .85,
+      	 levels: 3,
+      	 maxValue: 0,
+      	 radians: 2 * Math.PI,
+      	 opacityArea: 0.5,
+      	 ToRight: 5,
+      	 TranslateX: 80,
+      	 TranslateY: 30,
+      	 ExtraWidthX: 100,
+      	 ExtraWidthY: 100,
+      	 color: d3.scale.category10(),
+      	 x : 0,
+      	 y : 0
+      	};
+      
+      	if('undefined' !== typeof options){
+      	  for(var i in options){
+        		if('undefined' !== typeof options[i]){
+        		  cfg[i] = options[i];
+        		}
+      	  }
+      	}
+      	cfg.maxValue = Math.max(cfg.maxValue, d3.max(d, function(i){return d3.max(i.map(function(o){return o.value;}))}));
+      	var allAxis = (d[0].map(function(i, j){return i.axis}));
+      	var total = allAxis.length;
+      	var radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
+      	var Format = d3.format('%');
+      	var g = d3.select(id).select("svg").append("g").attr("transform", "translate("+cfg.x+","+cfg.y+")");        	var tooltip;
+      	
+      	//Circular segments
+      	for(var j=0; j<cfg.levels; j++){
+      	  var levelFactor = cfg.factor*radius*((j+1)/cfg.levels);
+      	  g.selectAll(".levels")
+      	   .data(allAxis)
+      	   .enter()
+      	   .append("line")
+      	   .attr("x1", function(d, i){return levelFactor*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+      	   .attr("y1", function(d, i){return levelFactor*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
+      	   .attr("x2", function(d, i){return levelFactor*(1-cfg.factor*Math.sin((i+1)*cfg.radians/total));})
+      	   .attr("y2", function(d, i){return levelFactor*(1-cfg.factor*Math.cos((i+1)*cfg.radians/total));})
+      	   .attr("class", "line")
+      	   .style("stroke", "#414141")
+      	   .style("stroke-opacity", "0.75")
+      	   .style("stroke-width", "0.3px")
+      	   .attr("transform", "translate(" + ((cfg.w/2)-levelFactor) + ", " + (cfg.h/2-levelFactor) + ")");
+      	}
+      
+      	series = 0;
+      	var axis = g.selectAll(".axis")
+      			.data(allAxis)
+      			.enter()
+      			.append("g")
+      			.attr("class", "axis");
+      	axis.append("line")
+      		.attr("x1", cfg.w/2)
+      		.attr("y1", cfg.h/2)
+      		.attr("x2", function(d, i){return cfg.w/2*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
+      		.attr("y2", function(d, i){return cfg.h/2*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
+      		.attr("class", "line")
+      		.style("stroke", "grey")
+      		.style("stroke-width", "1px");
+      
+      	d.forEach(function(y, x){
+      	  dataValues = [];
+      	  g.selectAll(".nodes")
+        		.data(y, function(j, i){
+        		  dataValues.push([
+        			cfg.w/2*(1-(parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.factor*Math.sin(i*cfg.radians/total)),
+        			cfg.h/2*(1-(parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.factor*Math.cos(i*cfg.radians/total))
+        		  ]);
+        		});
+      	  dataValues.push(dataValues[0]);
+      	  
+      	  g.selectAll(".area")
+      					 .data([dataValues])
+      					 .enter()
+      					 .append("polygon")
+      					 .attr("class", "radar-chart-serie"+series)
+      					 .style("stroke-width", "1px")
+      					 .style("stroke", "#112E45")
+      					 .attr("points",function(d) {
+      						 var str="";
+      						 for(var pti=0;pti<d.length;pti++){
+      							 str=str+d[pti][0]+","+d[pti][1]+" ";
+      						 }
+      
+      						 return str;
+      					  })
+      					 .style("fill", function(j, i){return "#77ADD9"})
+      					 .style("fill-opacity", cfg.opacityArea)
+      					 /*.on('mouseover', function (d){
+      										z = "polygon."+d3.select(this).attr("class");
+      										g.selectAll("polygon")
+      										 .transition(200)
+      										 .style("fill-opacity", 0.3);
+      										g.selectAll(z)
+      										 .transition(200)
+      										 .style("fill-opacity", 0.2);
+      									  })
+      					 .on('mouseout', function(){
+      										g.selectAll("polygon")
+      										 .transition(200)
+      										 .style("fill-opacity", cfg.opacityArea);
+      					 })*/;
+      	  series++;
+      	});
+      	series=0;
+      
+      	d.forEach(function(y, x){
+      	  var circles= g.selectAll(".nodes")
+      		.data(y).enter()
+      		.append("circle")
+      		.attr("class", "radar-chart-serie"+series)
+      		.attr('r', cfg.radius)
+      		.attr("alt", function(j){return Math.max(j.value, 0)})
+      		.attr("cx", function(j, i){
+      		  dataValues.push([
+      			cfg.w/2*(1-(parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.factor*Math.sin(i*cfg.radians/total)),
+      			cfg.h/2*(1-(parseFloat(Math.max(j.value, 0))/cfg.maxValue)*cfg.factor*Math.cos(i*cfg.radians/total))
+      		]);
+      		return cfg.w/2*(1-(Math.max(j.value, 0)/cfg.maxValue)*cfg.factor*Math.sin(i*cfg.radians/total));
+      		})
+      		.attr("cy", function(j, i){
+      		  return cfg.h/2*(1-(Math.max(j.value, 0)/cfg.maxValue)*cfg.factor*Math.cos(i*cfg.radians/total));
+      		})
+      		.attr("data-id", function(j){return j.axis})
+      		.style("fill", "#112E45").style("fill-opacity", .9)
+      		//.on('mouseover', function (d){
+      		;
+      		circles.append("path").attr("class", function(j, i) {return "tavu"+i;});
+      		circles.on('mouseover', function (j, i){
+      					newX =  parseFloat(d3.select(this).attr('cx')) - 10;
+      					newY =  parseFloat(d3.select(this).attr('cy')) - 5;
+      
+      					// Highlight
+      					//d3.select(this).style("fill", "#C9E5FC");
+      					g.selectAll("path.tavu"+i).style("fill", "#C9E5FC");
+      					//g.selectAll("circle.radar-chart-serie"+series).style("fill", "#C9E5FC");
+      					
+      					d3.select('#plot-message').text(function () {
+      						var ch = j.axis+': ' + j.realValue;
+      						return ch;
+      					}); 
+      
+      					z = "polygon."+d3.select(this).attr("class");
+      					g.selectAll("polygon")
+      						.transition(200)
+      						.style("fill-opacity", 0.3);
+      					g.selectAll(z)
+      						.transition(200)
+      						.style("fill-opacity", 0.2);
+      				  })
+      		.on('mouseout', function(j, i){
+      					//d3.select(this).style("fill", "#112E45");
+      					g.selectAll("path.tavu"+i).style("fill", "#112E45");
+      					
+      					g.selectAll("polygon")
+      						.transition(200)
+      						.style("fill-opacity", cfg.opacityArea);
+      				  })
+      		.append("title");
+      
+      	  series++;
+      	});
+      	//Tooltip
+      	tooltip = g.append('text')
+      			   .style('opacity', 0)
+      			   .style('font-family', 'sans-serif')
+      			   .style('font-size', '13px');
+      }
+    }
+  
 
     
     ////////////////////////////////////////////////////////////////////////////
@@ -898,7 +1075,8 @@ $.extend(theOutputBinding, {
       				}
       				//Call function to draw the Radar chart
       				//Will expect that data is in %'s
-      				RadarChart.draw("#thePlot", arrayValues, mycfg);
+      				// RadarChart.draw("#thePlot", arrayValues, mycfg);
+      				StarChart("#thePlot", arrayValues, mycfg);
       				
       				rows.on('mouseover', function (d, i) {
       				var el = d3.select(this)
@@ -1545,7 +1723,6 @@ $.extend(theOutputBinding, {
           //////////////////////////////////////////////////////////////////////////    
           
         	for (p = 0; p < nbRows*nbColumns; p++) {
-      				
       			var innerArrayNormalizedValues= starPlotNormalizedValues[p];	
       			var innerArrayRealValues= starPlotRealValues[p];	
     				// Check if single variable
@@ -1579,7 +1756,8 @@ $.extend(theOutputBinding, {
       
       			//Call function to draw the Radar chart
       			//Will expect that data is in %'s
-      			RadarChart.draw("#thePlot", arrayValues, mycfg);
+      			//RadarChart.draw("#thePlot", arrayValues, mycfg);
+      			StarChart("#thePlot", arrayValues, mycfg);
       			
       			hexa.on('mouseover', function (d, i) {
       				var el = d3.select(this)
