@@ -278,7 +278,39 @@ shinyServer(function(input, output, session) {
         rownames(dat) <- ok.rownames()
         dat <- as.matrix(na.omit(dat))
         if (input$trainscale) dat <- scale(dat)
-        init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
+        
+        ## Initialization
+        if (input$kohInit == "random") {
+          init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
+        } else if (input$kohInit %in% c("pca.sample", "pca")) {
+          # the most detailed grid axis is assigned to the first component
+          if (input$kohDimx >= input$kohDimy) {
+            x.ev <- 1
+            y.ev <- 2
+          } else {
+            x.ev <- 2
+            y.ev <- 1
+          }
+          # perform PCA (TODO: make hex grid on pca ?)
+          data.pca <- prcomp(dat, center= F, scale.= F)
+          x <- seq(from= quantile(data.pca$x[,x.ev], .025), 
+                   to= quantile(data.pca$x[,x.ev], .975),
+                   length.out= input$kohDimx)
+          y <- seq(from= quantile(data.pca$x[,y.ev], .025), 
+                   to= quantile(data.pca$x[,y.ev], .975),
+                   length.out= input$kohDimy)
+          base <- as.matrix(expand.grid(x=x, y=y))
+          if (input$kohInit == "pca.sample") {
+            ## As in SOMbrero, init to observations closest to a 2D PCA grid
+            closest.obs <- apply(base, 1, function(point) 
+              which.min(colSums((t(data.pca$x[,c(x.ev,y.ev)])-point)^2)))
+            init <- dat[closest.obs,]
+          } else if (input$kohInit == "pca") {
+            ## Pure PCA grid
+            base <- cbind(base, matrix(0, nrow(base))[, rep(1, ncol(data.pca$x) - 2)])
+            init <- base %*% t(data.pca$rotation)
+          }
+        } 
         res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                    init= init)
         res$msg <- msg

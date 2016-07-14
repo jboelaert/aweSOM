@@ -23,6 +23,7 @@
 * U-matrix distance
 * Polygon distance
 * PCA initialization
+* scatterplot (2 var) par cellule, échelle commune
 * Distance to cell on mouse
 * grid
 * légende
