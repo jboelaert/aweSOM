@@ -25,7 +25,8 @@ getPalette <- function(pal, n) {
 ############################
 ## Fonction qui génère les paramètres à passer à JS
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
-                          normtype= c("range", "contrast"), palsc, palplot) {
+                          normtype= c("range", "contrast"), palsc, palplot, 
+                          cellNames) {
   
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
@@ -45,7 +46,9 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
               sizeInfo= plotsize, 
               gridInfo= gridInfo, 
               superclass= superclass, 
-              superclassColor= superclassColor)
+              superclassColor= superclassColor, 
+              cellNames= cellNames, 
+              cellPop= unname(clust.table))
   
   ## Traitement data si besoin :
   if (type == "Camembert") {
@@ -319,6 +322,11 @@ shinyServer(function(input, output, session) {
     } 
   })
   
+  ## Get clustering when ok.som changes
+  ok.clust <- reactive({
+    factor(ok.som()$unit.classif, 1:nrow(ok.som()$grid$pts))
+  })
+  
   ## Compute superclasses when ok.som or superclass changes
   ok.hclust <- reactive({
     if(!is.null(ok.som()))
@@ -382,6 +390,14 @@ shinyServer(function(input, output, session) {
                 # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
                 selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
   })
+  output$plotNames <- renderUI({
+    data <- ok.data()
+    if (is.null(data)) return()
+    tmp.numeric <- sapply(data, is.numeric)
+    selectInput("plotNames", "Names variable:",
+                choices= c("(rownames)", colnames(data)),
+                selected= "(rownames)")
+  })
     
   ## Scree plot
   output$screeplot <- renderPlot({
@@ -399,7 +415,15 @@ shinyServer(function(input, output, session) {
                                                           "Names")))
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
-    
+    # Obs names per cell for message box
+    if (is.null(input$plotNames)) return()
+    if (input$plotNames == "(rownames)") {
+      plotNames.var <- rownames(ok.data()[ok.trainrows(), ])
+    } else 
+      plotNames.var <- as.character(ok.data()[ok.trainrows(), input$plotNames])
+    cellNames <- unname(lapply(split(plotNames.var, ok.clust()), 
+                        function(x) paste(x, collapse= ", "))) # "&#13;&#10;" "<br />"
+
     if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot", "Line")) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
@@ -420,6 +444,6 @@ shinyServer(function(input, output, session) {
     contrast <- ifelse(input$contrast, "contrast", "range")
     getPlotParams(input$graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
-                  input$palsc, input$palplot)
+                  input$palsc, input$palplot, cellNames)
   })    
 })

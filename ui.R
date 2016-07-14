@@ -99,7 +99,8 @@ shinyUI(fluidPage(
                              selectInput("palplot", "Plots palette", 
                                          c("viridis", "rainbow", "heat", "terrain", 
                                            "topo", "cm", rownames(brewer.pal.info)), 
-                                         "viridis")), 
+                                         "viridis"),
+                             uiOutput("plotNames")), 
                              
                       column(8, 
                              fluidRow(column(6, sliderInput("plotSize", "Plot size:", 10, 1000, value= 100)), 
@@ -110,7 +111,8 @@ shinyUI(fluidPage(
                              conditionalPanel('input.graphType != "Dendrogram"', 
                                               includeHTML("graphs.html"), 
                                               HTML('<h4 id="plot-message">Hover over the plot for information.</h4>'),
-                                              HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'))
+                                              HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'), 
+                                              HTML('<h4 id="plot-names"> </h4>'))
                              )))
   )
   

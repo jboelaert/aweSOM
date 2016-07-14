@@ -38,6 +38,8 @@ $.extend(theOutputBinding, {
     var h = cellSize*nbRows;
     var superclass = data.superclass;
     var superclassColor = data.superclassColor;
+  	var cellNames = data.cellNames;
+  	var cellPop = data.cellPop;
 
     // Plot-specific data
     if(plotType.localeCompare("Radar")==0) {
@@ -387,6 +389,9 @@ $.extend(theOutputBinding, {
       				var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' +  'value: ' + colorRealValues[(n*nbColumns)+i];
       				return ch;
       				}); 
+      			d3.select('#plot-names').text(function () {
+      				return cellNames[(n*nbColumns)+i];
+      				}); 
         		});
         	rows.on('mouseout', function (d, i) {
         			var el = d3.select(this)
@@ -458,6 +463,10 @@ $.extend(theOutputBinding, {
     					var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i] + ' | ' +  'value: ' + hitmapRealValues[(n*nbColumns)+i];
     					return ch;
     					}); 
+    					
+      			d3.select('#plot-names').text(function () {
+      				return cellNames[(n*nbColumns)+i];
+      				}); 
     			});
     
     			rows.on('mouseout', function (d, i) {
@@ -546,6 +555,11 @@ $.extend(theOutputBinding, {
     				.style("fill", "none")
     				.style("stroke", "#112E45");
     			
+    			rows.on('mouseover', function(d, i) {
+      			d3.select('#plot-names').text(function () {
+      				return cellNames[(n*nbColumns)+i];
+      				}); 
+    			});
     			rows.on('mousemove', function (d, i) {	
     				for(var k=0; k<nbRows; k++){
     					for(var l=0; l<nbColumns; l++){
@@ -676,6 +690,9 @@ $.extend(theOutputBinding, {
                   var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + radarRealSize[(n*nbColumns)+i] + ' | ';
                   return ch;
                 });
+          			d3.select('#plot-names').text(function () {
+          				return cellNames[(n*nbColumns)+i];
+        				}); 
               });
               rows.on('mouseout', function (d, i) {
                 var el = d3.select(this)
@@ -752,6 +769,9 @@ $.extend(theOutputBinding, {
     							var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'size: ' + pieRealSize[(n*nbColumns)+i];
     							return ch;
     						}); 
+          			d3.select('#plot-names').text(function () {
+          				return cellNames[(n*nbColumns)+i];
+        				}); 
     					});
               rows.on('mouseout', function (d, i) {
     						var el = d3.select(this)
@@ -844,6 +864,9 @@ $.extend(theOutputBinding, {
       						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
       						return ch;
       						});
+          			d3.select('#plot-names').text(function () {
+          				return cellNames[(n*nbColumns)+i];
+          				}); 
       						
       					var el = d3.select(this)
       						.transition()
@@ -863,7 +886,7 @@ $.extend(theOutputBinding, {
       						var ch=label[i]+": " + d.data.realValue;
       						return ch;	
       					});
-      						
+
       					svg.selectAll("rect.r"+i)
       						.attr("stroke","white")
       						.transition()
@@ -1008,6 +1031,9 @@ $.extend(theOutputBinding, {
       						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
       						return ch;
       						});
+          			d3.select('#plot-names').text(function () {
+          				return cellNames[(n*nbColumns)+i];
+          				}); 
       					var el = d3.select(this)
       						.transition()
       						.duration(10)		  
@@ -1087,6 +1113,9 @@ $.extend(theOutputBinding, {
       					var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1) + ' | ' + 'superclasse : ' + superclass[(n*nbColumns)+i];
       					return ch;
       					}); 
+        			d3.select('#plot-names').text(function () {
+        				return cellNames[(n*nbColumns)+i];
+        				}); 
       				});
       				rows.on('mouseout', function (d, i) {
       					var el = d3.select(this)
@@ -1147,6 +1176,9 @@ $.extend(theOutputBinding, {
       						var ch = 'row: ' + (n + 1) + ' | ' + 'column: ' + (i + 1);
       						return ch;
       					}); 
+          			d3.select('#plot-names').text(function () {
+          				return cellNames[(n*nbColumns)+i];
+          				}); 
       				});
       				rows.on('mouseout', function (d, i) {
       					var el = d3.select(this)
@@ -1236,8 +1268,13 @@ $.extend(theOutputBinding, {
     				.duration(10)		  
     				.style("fill-opacity", 0.8);
     			d3.select('#plot-message').text(function () {
-    				return 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' +  'value: ' + colorRealValues[i];
+    				return 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
+              superclass[i] + ', N= ' + cellPop[i], 
+              'value: ' + colorRealValues[i];
     			}); 
+    			d3.select('#plot-names').text(function () {
+    				return cellNames[i];
+  				});
     		});
     		hexa.on('mouseout', function (d, i) {
     			var el = d3.select(this)
@@ -1288,9 +1325,13 @@ $.extend(theOutputBinding, {
     				.duration(10)		  
     				.style("fill-opacity", 0.8);
     			d3.select('#plot-message').text(function () {
-    				var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' +  parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[i] + ' | ' +  'value: ' + hitmapRealValues[i];
+    				var ch = 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
+              superclass[i] + ', N= ' + cellPop[i];
     				return ch;
-    			}); 
+    			});
+    			d3.select('#plot-names').text(function () {
+    				return cellNames[i];
+  				});
     		});
     		hexa.on('mouseout', function (d, i) {
     			var el = d3.select(this)
@@ -1317,7 +1358,30 @@ $.extend(theOutputBinding, {
   				var indice = superclass[i];
   				return superclassColor[indice-1];
   			});
-        
+
+        // Hexagon cell mouse actions for all plots
+        hexa.on('mouseover', function (d, i) {
+  				var el = d3.select(this)
+  					.transition()
+  					.duration(10)		  
+  					.style("fill-opacity", 0.8);
+          
+          d3.select('#plot-message').text(function () {
+            var ch = 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
+              superclass[i] + ', N= ' + cellPop[i];
+            return ch;
+          }); 
+    			d3.select('#plot-names').text(function () {
+    				return cellNames[i];
+  				});
+        });
+        hexa.on('mouseout', function (d, i) {
+          var el = d3.select(this)
+					.transition()
+					.duration(1000)
+					.style("fill-opacity", 1);
+        });
+
         var array = d3.range(nbColumns);
         var width = hexRadius;
         var height = hexRadius;
@@ -1366,24 +1430,6 @@ $.extend(theOutputBinding, {
     					return labelColor[i];
     				})
             
-            // Mouse actions
-            hexa.on('mouseover', function (d, i) {
-    				var el = d3.select(this)
-    					.transition()
-    					.duration(10)		  
-    					.style("fill-opacity", 0.8);
-              
-              d3.select('#plot-message').text(function () {
-                var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + radarRealSize[i];
-                return ch;
-              }); 
-            });
-            hexa.on('mouseout', function (d, i) {
-              var el = d3.select(this)
-    					.transition()
-    					.duration(1000)
-    					.style("fill-opacity", 1);
-            });
             pieParts.on('mouseenter', function (d, i) {
               d3.select('#plot-message').text(function () { 
                 var innerArrayRealValues = [];
@@ -1445,23 +1491,6 @@ $.extend(theOutputBinding, {
     						return labelColor[i];
     					})	
     					
-    				hexa.on('mouseover', function (d, i) {
-    					var el = d3.select(this)
-    						.transition()
-    						.duration(10)		  
-    						.style("fill-opacity", 0.8);
-    									
-    					d3.select('#plot-message').text(function () {
-    						var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'size: ' + pieRealSize[i];
-    						return ch;
-    					}); 
-    				});
-    				hexa.on('mouseout', function (d, i) {
-    					var el = d3.select(this)
-    						.transition()
-    						.duration(1000)
-    						.style("fill-opacity", 1);
-    					});
             pieParts.on('mouseenter', function (d, i) {
     					d3.select('#plot-message').text(function () { 
     						var ch=label[i]+": " + d.data.realValue;
@@ -1533,25 +1562,6 @@ $.extend(theOutputBinding, {
       						return labelColor[i];
       				});
       			
-      			hexa.on('mouseover', function (d, i) {	
-      				d3.select('#plot-message').text(function () {
-      					var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
-      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[indice];
-      					return ch;
-      					});
-      					
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(10)		  
-      					.style("fill-opacity", 0.8);		 
-      			});
-      
-      			hexa.on('mouseout', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(1000)
-      					.style("fill-opacity", 1);
-      			});				
       			bars.on('mouseenter', function (d, i) {
       				d3.select('#plot-message').text(function () { 
       					var ch=label[i]+": " + d.data.realValue;
@@ -1683,23 +1693,6 @@ $.extend(theOutputBinding, {
       				});
       			}
       				
-      			hexa.on('mouseover', function (d, i) {	
-      				d3.select('#plot-message').text(function () {
-      					var indice = (parseInt((i/nbRows),10)*nbColumns)+ parseInt((i%nbRows),10);
-      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[indice];
-      					return ch;
-      					});
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(10)		  
-      					.style("fill-opacity", 0.8);		 
-      			});
-      			hexa.on('mouseout', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(1000)
-      					.style("fill-opacity", 1);
-      			});				
       			boxs.on('mouseenter', function (d, i) {
       				d3.select('#plot-message').text(function () { 
     						var ch=label[i]+ ": Q1= " + d.realValues[1] + " ; Med= " +
@@ -1759,24 +1752,6 @@ $.extend(theOutputBinding, {
       			//RadarChart.draw("#thePlot", arrayValues, mycfg);
       			StarChart("#thePlot", arrayValues, mycfg);
       			
-      			hexa.on('mouseover', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(10)		  
-      					.style("fill-opacity", 0.8);
-      								
-      				d3.select('#plot-message').text(function () {
-      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse : ' + superclass[i];
-      					return ch;
-      					}); 
-      			});
-      
-      			hexa.on('mouseout', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(1000)
-      					.style("fill-opacity", 1);
-      			});
       		}          
         } else if(plotType.localeCompare("Line")==0) {
           //////////////////////////////////////////////////////////////////////////
@@ -1920,23 +1895,6 @@ $.extend(theOutputBinding, {
       				.on("end", draw)
       				.start();
               
-      			hexa.on('mouseover', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(10)		  
-      					.style("fill-opacity", 0.8);
-      									
-      				d3.select('#plot-message').text(function () {
-      					var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10);
-      					return ch;
-      				}); 
-      			});
-      			hexa.on('mouseout', function (d, i) {
-      				var el = d3.select(this)
-      					.transition()
-      					.duration(1000)
-      					.style("fill-opacity", 1);
-      			});
       		}
         }
       }
