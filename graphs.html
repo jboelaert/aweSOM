@@ -21,10 +21,16 @@ $.extend(theOutputBinding, {
     return $(scope).find('.shiny-Plot');
   },
   renderValue: function(el, data) {
+    document.getElementById("cell-info").style.textAlign = "center";
     document.getElementById("plot-message").style.textAlign = "center";
 
     //remove the old graph
     document.getElementById("thePlot").innerHTML = "";
+    
+    // remove old plot messages
+    document.getElementById("cell-info").innerHTML = "Hover over the plot for information.";
+    document.getElementById("plot-message").innerHTML = "-";
+    document.getElementById("plot-names").innerHTML = "-";
     
     // Import common data
     if(data == null ) {return;}
@@ -104,6 +110,7 @@ $.extend(theOutputBinding, {
     } else if(plotType.localeCompare("Line")==0) {
       // Lines
       var nbPoints = data.nbPoints;
+      var label = data.label;
       var lineNormalizedValues = data.lineNormalizedValues;
     	var lineRealValues = data.lineRealValues;
     } else if(plotType.localeCompare("Names")==0) {
@@ -1267,11 +1274,13 @@ $.extend(theOutputBinding, {
     				.transition()
     				.duration(10)		  
     				.style("fill-opacity", 0.8);
-    			d3.select('#plot-message').text(function () {
+    			d3.select('#cell-info').text(function () {
     				return 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
-              superclass[i] + ', N= ' + cellPop[i], 
-              'value: ' + colorRealValues[i];
+              superclass[i] + ', N= ' + cellPop[i]; 
     			}); 
+    			d3.select('#plot-message').text(function () {
+    				return 'Value: ' + colorRealValues[i];
+    			});
     			d3.select('#plot-names').text(function () {
     				return cellNames[i];
   				});
@@ -1324,8 +1333,8 @@ $.extend(theOutputBinding, {
     				.transition()
     				.duration(10)		  
     				.style("fill-opacity", 0.8);
-    			d3.select('#plot-message').text(function () {
-    				var ch = 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
+    			d3.select('#cell-info').text(function () {
+    				var ch = 'Cell ' + parseInt(i+1,10) + ', Superclass ' + 
               superclass[i] + ', N= ' + cellPop[i];
     				return ch;
     			});
@@ -1366,8 +1375,8 @@ $.extend(theOutputBinding, {
   					.duration(10)		  
   					.style("fill-opacity", 0.8);
           
-          d3.select('#plot-message').text(function () {
-            var ch = 'Cell ' + parseInt(i+1,10) + ', superclass ' + 
+          d3.select('#cell-info').text(function () {
+            var ch = 'Cell ' + parseInt(i+1,10) + ', Superclass ' + 
               superclass[i] + ', N= ' + cellPop[i];
             return ch;
           }); 
@@ -1432,8 +1441,7 @@ $.extend(theOutputBinding, {
             
             pieParts.on('mouseenter', function (d, i) {
               d3.select('#plot-message').text(function () { 
-                var innerArrayRealValues = [];
-                var ch=label[i]+": " + d.data.realValue;
+                var ch = label[i] + ": " + d.data.realValue;
                 return ch;
               });
               svg.selectAll("path.r"+i)
@@ -1443,6 +1451,9 @@ $.extend(theOutputBinding, {
                 .attr("stroke-width",2);
             });
             pieParts.on('mouseleave', function (d, i) {
+              d3.select('#plot-message').text(function () { 
+                return "-";
+              });
               svg.selectAll("path.r"+i)
                 .transition()
                 .duration(50)
@@ -1503,6 +1514,9 @@ $.extend(theOutputBinding, {
     						.attr("stroke-width",2);
     				});
             pieParts.on('mouseleave', function (d, i) {
+              d3.select('#plot-message').text(function () { 
+                return "-";
+              });
   						svg.selectAll("path.r"+i)
     					  .transition()
     						.duration(50)
@@ -1574,6 +1588,9 @@ $.extend(theOutputBinding, {
       					.attr("stroke-width",2);
       			});
       			bars.on('mouseleave', function (d, i) {
+              d3.select('#plot-message').text(function () { 
+                return "-";
+              });
       				svg.selectAll("rect.r"+i).transition()
       						.duration(50)
       						.attr("stroke","none");
@@ -1687,6 +1704,9 @@ $.extend(theOutputBinding, {
       						.attr("stroke-width",2)
       				});
       				focus.on('mouseleave', function (d, i) {
+                d3.select('#plot-message').text(function () { 
+                  return "-";
+                });
       					d3.select(this).transition()
       						.duration(50)
       						.attr("stroke-width",1);
@@ -1705,6 +1725,9 @@ $.extend(theOutputBinding, {
       					.attr("stroke-width",2);
       			});
       			boxs.on('mouseleave', function (d, i) {
+              d3.select('#plot-message').text(function () { 
+                return "-";
+              });
       				d3.select(this).transition()
       					.duration(50)
       					.attr("stroke-width",1);
@@ -1843,8 +1866,8 @@ $.extend(theOutputBinding, {
       						if(l==parseInt((i%nbRows),10) && k==parseInt((i/nbRows),10)){
       							d3.select('#plot-message').text(function () {
       								var pointValue = d == d0 ? arrayValues[p-1].realValue : arrayValues[p].realValue;
-      								var ch = 'row: ' + parseInt((i/nbRows)+1,10) + ' | ' + 'column: ' + parseInt((i%nbRows)+1,10) + ' | ' + 'superclasse: ' + superclass[indice] + ' | ' + 'pointValue: ' + pointValue;
-      								return ch;
+      								var pointLabel = d == d0 ? label[p-1] : label[p];
+      								return pointLabel + ': ' + pointValue;
       							});
       						}
       					}

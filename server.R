@@ -130,6 +130,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$hitmapRealValues <- unname(clust.table)
   } else if (type == "Line") {
     res$nbPoints <- nvar
+    res$label <- varnames
     res$lineNormalizedValues <- normValues
     res$lineRealValues <- realValues    
   } else if (type == "Barplot") {

@@ -110,9 +110,10 @@ shinyUI(fluidPage(
                                               plotOutput("screeplot")),
                              conditionalPanel('input.graphType != "Dendrogram"', 
                                               includeHTML("graphs.html"), 
-                                              HTML('<h4 id="plot-message">Hover over the plot for information.</h4>'),
+                                              HTML('<h4 id="cell-info">Hover over the plot for information.</h4>'),
+                                              HTML('<h4 id="plot-message">-</h4>'),
                                               HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'), 
-                                              HTML('<h4 id="plot-names"> </h4>'))
+                                              HTML('<h4 id="plot-names">-</h4>'))
                              )))
   )
   
