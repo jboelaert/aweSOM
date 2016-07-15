@@ -1,13 +1,17 @@
+## BUGS
+* Lines : changer le mécanisme de proximité
+* Boxplot, Star : empty cells -> NA
+* Fix names : tous ne s'affichent pas
+* Starplot : parfois les ~0 sont à l'exterieur des étoiles
+* Names plot : enlever ?
+* Contrast : 0 / NA (empty cells)
+* One superclass color
+
 ## TODO
 * Help contrast
-* One superclass color
-* Contrast : 0 / NA (empty cells)
 * Star categorical realValue (ex : frondeur 1.62)
 * Barplot hex norm : 0-1
-* Boxplot, Star : empty cells -> NA
-* Boplot : option show outliers
-* Fix names : tous ne s'affichent pas
-* Msgbox pour nom des individus
+* Boplot : option hide outliers
 * SVG save
 * highlight all
 * Warning une seule colonne csv
@@ -24,7 +28,7 @@
 * Polygon distance
 * PCA initialization
 * scatterplot (2 var) par cellule, échelle commune
-* Distance to cell on mouse
+* Distance of cells to active cell
 * grid
 * légende
 * save to html
@@ -32,9 +36,6 @@
 * call from R : kohonen, sombrero, ...
 * Relational SOM
 * Additional variables : 2 kinds
-
-#2. Graph> Line : Point value : qu'est-ce que c'est?
-#4. Graph > Color : A quoi correspondent les couleurs indiquées?
 
 7. Graph > Names:
 - Sur mon jeu de données test, des noms ne sont pas présents (j'ai une case vide, alors que j'avais 3 personnes dedans)

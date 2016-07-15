@@ -113,7 +113,8 @@ shinyUI(fluidPage(
                                               HTML('<h4 id="cell-info">Hover over the plot for information.</h4>'),
                                               HTML('<h4 id="plot-message">-</h4>'),
                                               HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'), 
-                                              HTML('<h4 id="plot-names">-</h4>'))
+                                              HTML('<br />'), 
+                                              wellPanel(HTML('<p id="plot-names">Observation names will appear here.</p>')))
                              )))
   )
   

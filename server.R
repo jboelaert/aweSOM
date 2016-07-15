@@ -154,7 +154,8 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   } else if (type == "Color") {
     res$activate <- TRUE
     res$colorNormalizedValues <- normValues
-    res$colorRealValues <- realValues    
+    res$colorRealValues <- realValues   
+    res$label <- varnames
   } else if (type == "Star") {
     res$nbSommet <- nvar
     res$label <- varnames
