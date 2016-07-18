@@ -1,11 +1,10 @@
 ## BUGS
 * Lines : changer le mécanisme de proximité
 * Boxplot, Star : empty cells -> NA
-* Fix names : tous ne s'affichent pas
 * Starplot : parfois les ~0 sont à l'exterieur des étoiles
 * Names plot : enlever ?
 * Contrast : 0 / NA (empty cells)
-* One superclass color
+* Superclass colors palette limit --> warning
 
 ## TODO
 * Help contrast
