@@ -4,7 +4,6 @@
 * Starplot : parfois les ~0 sont à l'exterieur des étoiles
 * Names plot : enlever ?
 * Contrast : 0 / NA (empty cells)
-* Superclass colors palette limit --> warning
 
 ## TODO
 * Help contrast
@@ -12,7 +11,6 @@
 * Barplot hex norm : 0-1
 * Boplot : option hide outliers
 * SVG save
-* highlight all
 * Warning une seule colonne csv
 * File locale
 * save R session
@@ -35,9 +33,5 @@
 * call from R : kohonen, sombrero, ...
 * Relational SOM
 * Additional variables : 2 kinds
-
-7. Graph > Names:
-- Sur mon jeu de données test, des noms ne sont pas présents (j'ai une case vide, alors que j'avais 3 personnes dedans)
-
 
 

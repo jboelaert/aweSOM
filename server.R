@@ -448,4 +448,16 @@ shinyServer(function(input, output, session) {
                   data, input$plotSize, plotVar, contrast, 
                   input$palsc, input$palplot, cellNames)
   })    
+  
+  ## Fancy JS Plots
+  output$plotWarning <- renderText({
+    if ( ! input$palsc %in% c("viridis", "rainbow", "heat", "terrain", "topo", "cm")) {
+      if (input$kohSuperclass > brewer.pal.info[input$palsc, "maxcolors"]) {
+        return(paste0("WARNING: Palette ", input$palsc, 
+                      " does not support more than ", 
+                      brewer.pal.info[input$palsc, "maxcolors"], " colors."))
+      }
+    }
+    return(NULL)
+  })
 })

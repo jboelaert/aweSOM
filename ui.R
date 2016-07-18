@@ -100,7 +100,8 @@ shinyUI(fluidPage(
                                          c("viridis", "rainbow", "heat", "terrain", 
                                            "topo", "cm", rownames(brewer.pal.info)), 
                                          "viridis"),
-                             uiOutput("plotNames")), 
+                             uiOutput("plotNames"), 
+                             uiOutput("plotWarning")), 
                              
                       column(8, 
                              fluidRow(column(6, sliderInput("plotSize", "Plot size:", 10, 1000, value= 100)), 
