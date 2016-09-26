@@ -192,7 +192,8 @@ $.extend(theOutputBinding, {
       	var total = allAxis.length;
       	var radius = cfg.factor*Math.min(cfg.w/2, cfg.h/2);
       	var Format = d3.format('%');
-      	var g = d3.select(id).select("svg").append("g").attr("transform", "translate("+cfg.x+","+cfg.y+")");        	var tooltip;
+      	var g = d3.select(id).select("svg").append("g").attr("transform", "translate("+cfg.x+","+cfg.y+")");
+      	var tooltip;
       	
       	//Circular segments
       	for(var j=0; j<cfg.levels; j++){

@@ -1,12 +1,19 @@
 ## BUGS
 * Lines : changer le mécanisme de proximité
 * Boxplot, Star : empty cells -> NA
-* Starplot : parfois les ~0 sont à l'exterieur des étoiles
+* Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D
 * Names plot : enlever ?
 * Contrast : 0 / NA (empty cells)
+* Hitmap : mouse focus cell and polygon
+* Train : X et Y intervertis
+* color : NA -> white
 
 ## TODO
+* serveur Strasbourg
+* greyscale color
+* barplot categorical
 * Help contrast
+* Third contrast option : no normalization
 * Star categorical realValue (ex : frondeur 1.62)
 * Barplot hex norm : 0-1
 * Boplot : option hide outliers
@@ -15,23 +22,26 @@
 * File locale
 * save R session
 * save data with clustering
-* Energy, Kaski-Lagus
-* Train options
+* Energy, Kaski-Lagus, % variance
+* Advanced training options
 * isolate train in var choice
 * pas d'update nom de variable à train si mêmes variables
 
 ## Wishlist
+* variable weights
+* choices for graphs: median, prototypes
 * U-matrix distance
 * Polygon distance
 * PCA initialization
 * scatterplot (2 var) par cellule, échelle commune
 * Distance of cells to active cell
-* grid
-* légende
+* grid on the plots
+* légende (ggplot à part ?)
 * save to html
 * mixScale
 * call from R : kohonen, sombrero, ...
 * Relational SOM
 * Additional variables : 2 kinds
-
+* Variable names plot (wordcloud of variables that characterize cell)
+* data formats (sas, stata..., xls ?)
 

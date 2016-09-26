@@ -1,4 +1,4 @@
-## 27/04/2016 : Shiny som sur iris - camemberts js
+## 27/04/2016 : Shiny SOM
 
 library(kohonen)
 library(RColorBrewer)
@@ -72,24 +72,29 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
         normDat <- as.data.frame(sapply(data, function(x) .05 + .9 * (x - min(x)) / (max(x) - min(x))))
         normValues <- unname(lapply(split(normDat, clustering), 
                                     function(x) {
-                                      if (!nrow(x)) return(rep(0, nvar))
+                                      if (!nrow(x)) return(rep(NA, nvar))
                                       unname(colMeans(x))
                                     }))
         realValues <- unname(lapply(split(data, clustering), 
                                     function(x) {
-                                      if (!nrow(x)) return(rep(0, nvar))
+                                      if (!nrow(x)) return(rep(NA, nvar))
                                       unname(round(colMeans(x), 3))
                                     }))
+        print(realValues)
+        print(normValues)
       } else if (normtype == "contrast") {
         ## "Contrast" normalization : means on data, then range(means) -> [0,1]
         realValues <- do.call(rbind, lapply(split(data, clustering), 
                                             function(x) {
-                                              if (!nrow(x)) return(rep(0, nvar))
+                                              if (!nrow(x)) return(rep(NA, nvar))
                                               unname(round(colMeans(x), 3))
                                             }))
-        normValues <- apply(realValues, 2, function(x) .05 + .9 * (x - min(x)) / (max(x) - min(x)))
+        normValues <- apply(realValues, 2, function(x) 
+          .05 + .9 * (x - min(x, na.rm= T)) / (max(x, na.rm= T) - min(x, na.rm= T)))
         realValues <- unname(as.list(as.data.frame(t(realValues))))
         normValues <- unname(as.list(as.data.frame(t(normValues))))
+        print(realValues)
+        print(normValues)
       }
       if (type == "Color") {
         ## 8 colors (equal-sized bins of values) of selected palette
@@ -241,11 +246,12 @@ shinyServer(function(input, output, session) {
   # Update train variable choice on data change
   output$varchoice <- renderUI({
     if (is.null(ok.data())) return()
+    selected <- colnames(ok.data())[sapply(ok.data(), class) %in%
+                                      c("integer", "numeric")]
+    selected <- selected[apply(ok.data()[, selected], 2, sd) != 0]
     checkboxGroupInput(inputId="varchoice", label="Training variables:",
                        choices=as.list(colnames(ok.data())),
-                       selected=as.list(colnames(ok.data())[
-                         sapply(ok.data(), class) %in%
-                           c("integer", "numeric")]))
+                       selected=as.list(selected))
   })
   # Update train variable choice on button click
   observe({
@@ -282,6 +288,7 @@ shinyServer(function(input, output, session) {
         }
         rownames(dat) <- ok.rownames()
         dat <- as.matrix(na.omit(dat))
+        
         if (input$trainscale) dat <- scale(dat)
         
         ## Initialization
