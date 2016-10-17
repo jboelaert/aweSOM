@@ -3,10 +3,12 @@
 * Boxplot, Star : empty cells -> NA
 * Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D
 * Names plot : enlever ?
-* Contrast : 0 / NA (empty cells)
 * Hitmap : mouse focus cell and polygon
 * Train : X et Y intervertis
 * color : NA -> white
+* line : NA -> empty
+* Default var selection
+* No train when no variables selected
 
 ## TODO
 * serveur Strasbourg
@@ -28,6 +30,7 @@
 * pas d'update nom de variable à train si mêmes variables
 
 ## Wishlist
+* Internationalization
 * variable weights
 * choices for graphs: median, prototypes
 * U-matrix distance

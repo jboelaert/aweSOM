@@ -80,8 +80,6 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
                                       if (!nrow(x)) return(rep(NA, nvar))
                                       unname(round(colMeans(x), 3))
                                     }))
-        print(realValues)
-        print(normValues)
       } else if (normtype == "contrast") {
         ## "Contrast" normalization : means on data, then range(means) -> [0,1]
         realValues <- do.call(rbind, lapply(split(data, clustering), 
@@ -93,8 +91,6 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
           .05 + .9 * (x - min(x, na.rm= T)) / (max(x, na.rm= T) - min(x, na.rm= T)))
         realValues <- unname(as.list(as.data.frame(t(realValues))))
         normValues <- unname(as.list(as.data.frame(t(normValues))))
-        print(realValues)
-        print(normValues)
       }
       if (type == "Color") {
         ## 8 colors (equal-sized bins of values) of selected palette
@@ -271,14 +267,15 @@ shinyServer(function(input, output, session) {
                              selected= NA)
   })
   
-  ## Train the SOM when the button is hit
-  ok.som <- reactive({
+  ## Train the SOM when the button is hit (first make the training dataset)
+  ok.traindat <- reactive({
     if (input$trainbutton > 0) {
       isolate({
         dat <- ok.data()[, input$varchoice]
         msg <- NULL
         num.cols <- sapply(dat[, input$varchoice], is.numeric)
         if (any(!num.cols)) {
+          ## TODO get this message to print
           msg <- paste0("Variables < ", 
                         ifelse(sum(!num.cols) == 1, input$varchoice[!num.cols], 
                                paste(input$varchoice[!num.cols], collape= ", ")), 
@@ -290,7 +287,14 @@ shinyServer(function(input, output, session) {
         dat <- as.matrix(na.omit(dat))
         
         if (input$trainscale) dat <- scale(dat)
-        
+        dat
+      })
+    }
+  })
+  ok.som <- reactive({
+    if (! is.null(ok.traindat())) {
+      isolate({
+        dat <- ok.traindat()
         ## Initialization
         if (input$kohInit == "random") {
           init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
@@ -325,7 +329,7 @@ shinyServer(function(input, output, session) {
         } 
         res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                    init= init)
-        res$msg <- msg
+        # res$msg <- msg
         res
       })
     } 
@@ -357,9 +361,43 @@ shinyServer(function(input, output, session) {
       rowSums(is.na(ok.data()[, isolate(input$varchoice)])) == 0
   })
   
+  ## Current quality measures when ok.som changes
+  ok.qual <- reactive({
+    if(!is.null(ok.som())) {
+      ## BMU, Squared distance from obs to BMU
+      bmu <- ok.som()$unit.classif
+      sqdist <- rowSums((ok.traindat() - ok.som()$codes[bmu, ])^2)
+      
+      ## Quantization error
+      err.quant <- mean(sqdist)
+
+      ## Interclass variance ratio
+      totalvar <- sum(apply(ok.traindat(), 2, var)) * 
+        (nrow(ok.traindat()) - 1) / nrow(ok.traindat())
+      err.varratio <- 100 - round(100 * err.quant / totalvar, 2)
+      
+      ## Topographic error
+      bmu2 <- apply(ok.traindat(), 1, function(row) {
+        dist <- colSums((t(ok.som()$codes) - row)^2)
+        order(dist)[2]
+      })
+      proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
+      err.topo <- mean(round(proto.gridspace.dist[cbind(bmu, bmu2)], 3) > 1)
+      
+      ## Kaski-Lagus error
+      proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
+      proto.dataspace.dist[round(proto.gridspace.dist, 3) > 1] <- NA
+      err.kaski <- e1071::allShortestPaths(proto.dataspace.dist)$length[cbind(bmu, bmu2)]
+      err.kaski <- mean(err.kaski + sqrt(sqdist))
+      
+      list(err.quant= err.quant, err.varratio= err.varratio, 
+           err.topo= err.topo, err.kaski= err.kaski)
+    }
+  })
+  
   ## Training message
   output$Message <- renderPrint({
-    if (is.null(ok.som())) 
+    if (is.null(ok.qual())) 
       return(cat("No map trained yet, click Train button."))
     
     if (!is.null(ok.som()$msg)) {
@@ -368,6 +406,11 @@ shinyServer(function(input, output, session) {
     }
     cat("## SOM summary:\n")
     summary(ok.som())
+    cat("\n## Quality measures:\n")
+    cat("* Quantization error     : ", ok.qual()$err.quant, "\n")
+    cat("* (% explained variance) : ", ok.qual()$err.varratio, "\n")
+    cat("* Topographic error      : ", ok.qual()$err.topo, "\n")
+    cat("* Kaski-Lagus error      : ", ok.qual()$err.kaski, "\n")
     cat("\n## Number of obs. per map cell:")
     table(factor(ok.som()$unit.classif, 
                  levels= 1:nrow(ok.som()$grid$pts)))
@@ -397,7 +440,8 @@ shinyServer(function(input, output, session) {
     selectInput("plotVarMult", "Plot variable:", multiple= T,
                 choices= colnames(data)[tmp.numeric],
                 # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
-                selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
+                # selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
+                selected= ok.trainvars()[1:length(ok.trainvars())])
   })
   output$plotNames <- renderUI({
     data <- ok.data()
