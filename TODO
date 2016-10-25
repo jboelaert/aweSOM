@@ -7,7 +7,7 @@
 * Train : X et Y intervertis
 * color : NA -> white
 * line : NA -> empty
-* Default var selection
+* 0-sd variables crash
 * No train when no variables selected
 
 ## TODO
@@ -28,6 +28,7 @@
 * Advanced training options
 * isolate train in var choice
 * pas d'update nom de variable à train si mêmes variables
+* camemberts : ajouter % dans le texte
 
 ## Wishlist
 * Internationalization

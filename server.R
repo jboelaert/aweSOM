@@ -3,7 +3,7 @@
 library(kohonen)
 library(RColorBrewer)
 library(viridis)
-options(shiny.maxRequestSize=100*1024^2) # Max filesize
+options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
 getPalette <- function(pal, n) {
   if(pal == "rainbow") return(as.list(substr(rainbow(n), 1, 7)))
@@ -244,7 +244,7 @@ shinyServer(function(input, output, session) {
     if (is.null(ok.data())) return()
     selected <- colnames(ok.data())[sapply(ok.data(), class) %in%
                                       c("integer", "numeric")]
-    selected <- selected[apply(ok.data()[, selected], 2, sd) != 0]
+    selected <- selected[apply(ok.data()[, selected], 2, sd, na.rm= T) != 0]
     checkboxGroupInput(inputId="varchoice", label="Training variables:",
                        choices=as.list(colnames(ok.data())),
                        selected=as.list(selected))
