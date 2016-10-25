@@ -266,6 +266,22 @@ shinyServer(function(input, output, session) {
     updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
                              selected= NA)
   })
+  # Update grid dimension on data update
+  observe({
+    if (is.null(ok.data())) return()
+    tmp.dim <- max(4, min(10, ceiling(sqrt(nrow(ok.data()) / 10))))
+    updateNumericInput(session, "kohDimx", value= tmp.dim)
+    updateNumericInput(session, "kohDimy", value= tmp.dim)
+  })
+  # Update training radius on change of grid
+  observe({
+    if (is.null(ok.data())) return()
+    tmpgrid <- somgrid(input$kohDimx, input$kohDimy, input$kohTopo)
+    tmpgrid$n.hood <- ifelse(input$kohTopo == "hexagonal", "circular", "square")
+    radius <- round(unname(quantile(unit.distances(tmpgrid, FALSE), .67)), 2)
+    updateNumericInput(session, "trainRadius1", value= radius)
+    updateNumericInput(session, "trainRadius2", value= -radius)
+  })
   
   ## Train the SOM when the button is hit (first make the training dataset)
   ok.traindat <- reactive({
@@ -328,7 +344,8 @@ shinyServer(function(input, output, session) {
           }
         } 
         res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
-                   init= init)
+                   rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
+                   radius= c(input$trainRadius1, input$trainRadius2, init= init))
         # res$msg <- msg
         res
       })

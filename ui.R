@@ -1,4 +1,4 @@
-## 27/04/2016 : Shiny som sur iris - camemberts js
+## 27/04/2016 : Shiny User Interface
 library(RColorBrewer)
 
 
@@ -60,9 +60,20 @@ shinyUI(fluidPage(
                                       column(4, numericInput('kohDimy', NULL, 4, min= 1))),
                              selectInput('kohTopo', 'Topology', c("hexagonal", "rectangular")), 
                              checkboxInput("trainscale", "Scale training data", T), 
-                             selectInput("kohInit", "Initialization", 
-                                         c("PCA"= "pca", "PCA Obs"= "pca.sample", 
-                                           "Random Obs"= "random"))),
+                             checkboxInput("trainAdvanced", "Advanced options", F), 
+                             conditionalPanel("input.trainAdvanced", 
+                                              fluidRow(column(4, p("Initialization")), 
+                                                       column(8, selectInput("kohInit", NULL, 
+                                                                             c("PCA"= "pca", "PCA Obs"= "pca.sample", 
+                                                                               "Random Obs"= "random")))),
+                                              fluidRow(column(4, p("rlen")), 
+                                                       column(8, numericInput("trainRlen", NULL, 100, 1, 1e6))),
+                                              fluidRow(column(4, p("Alpha (start, stop)")), 
+                                                       column(4, numericInput("trainAlpha1", NULL, .05, 1e-6, 1e3)), 
+                                                       column(4, numericInput("trainAlpha2", NULL, .01, 1e-6, 1e3))),
+                                              fluidRow(column(4, p("Radius (start, stop)")), 
+                                                       column(4, numericInput("trainRadius1", NULL, .05, 1e-6, 1e3)), 
+                                                       column(4, numericInput("trainRadius2", NULL, .05, 1e-6, 1e3))))),
                       column(8, 
                              fluidRow(column(4, actionButton("varNum", "Select numeric variables")), 
                                       column(4, actionButton("varAll", "Select all variables")), 
