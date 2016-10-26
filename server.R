@@ -443,30 +443,33 @@ shinyServer(function(input, output, session) {
     som <- ok.som()
     updateNumericInput(session, "kohSuperclass", max= som$grid$xdim * som$grid$ydim)
   })
-  
-  ## Sélection de variables (en fonction du graphique)
+
+  ## Update variable selection for graphs
   output$plotVarOne <- renderUI({
     if (is.null(ok.data())) return()
-    selectInput("plotVarOne", "Plot variable:", choices= colnames(ok.data()), 
-                selected= ok.trainvars()[1])
+    fluidRow(column(4, p("Plot variable:")), 
+             column(8, selectInput("plotVarOne", NULL, choices= colnames(ok.data()), 
+                selected= ok.trainvars()[1])))
   })
   output$plotVarMult <- renderUI({
     data <- ok.data()
     if (is.null(data)) return()
     tmp.numeric <- sapply(data, is.numeric)
-    selectInput("plotVarMult", "Plot variable:", multiple= T,
-                choices= colnames(data)[tmp.numeric],
-                # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
-                # selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
-                selected= ok.trainvars()[1:length(ok.trainvars())])
+    fluidRow(column(4, p("Plot variables:")), 
+             column(8, selectInput("plotVarMult", NULL, multiple= T,
+                                   choices= colnames(data)[tmp.numeric],
+                                   # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
+                                   # selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
+                                   selected= ok.trainvars()[1:length(ok.trainvars())])))
   })
   output$plotNames <- renderUI({
     data <- ok.data()
     if (is.null(data)) return()
     tmp.numeric <- sapply(data, is.numeric)
-    selectInput("plotNames", "Names variable:",
-                choices= c("(rownames)", colnames(data)),
-                selected= "(rownames)")
+    fluidRow(column(4, p("Names variable:")), 
+             column(8, selectInput("plotNames", NULL,
+                                   choices= c("(rownames)", colnames(data)),
+                                   selected= "(rownames)")))
   })
     
   ## Scree plot

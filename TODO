@@ -10,6 +10,7 @@
 * 0-sd variables crash
 * No train when no variables selected
 * Crash when duplicate rownames in data import (when rownames checked)
+* Camembert : select quali variable
 
 ## TODO
 * serveur Strasbourg
