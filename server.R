@@ -426,7 +426,7 @@ shinyServer(function(input, output, session) {
     summary(ok.som())
     isolate(cat(paste0("Training options: rlen = ", input$trainRlen, 
                        " ; alpha = (", input$trainAlpha1, ", ", input$trainAlpha2, ") ; ",
-                       "radius = (", input$trainRadius1, ", ", input$trainRadius2, ")")))
+                       "radius = (", input$trainRadius1, ", ", input$trainRadius2, ").")))
     cat("\n\n## Quality measures:\n")
     cat("* Quantization error     : ", ok.qual()$err.quant, "\n")
     cat("* (% explained variance) : ", ok.qual()$err.varratio, "\n")
