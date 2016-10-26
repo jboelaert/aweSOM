@@ -524,6 +524,7 @@ $.extend(theOutputBinding, {
     				.append("path")
     				.attr("class", "ligne")
     				.attr("d", function(d, i) { 
+    				  if (cellPop[(n*nbColumns)+i] == 0) return null;
     					innerArrayNormalizedValues= lineNormalizedValues[(n*nbColumns)+i];				
     					innerArrayRealValues= lineRealValues[(n*nbColumns)+i];
     				
@@ -912,6 +913,7 @@ $.extend(theOutputBinding, {
       			var array = d3.range(nbColumns);
       			
       			for (p = 0; p < array.length; p++) {
+      			  if (cellPop[(n*nbColumns)+p] == 0) {continue;}
       				var innerArrayNormalizedValues = boxPlotNormalizedValues[(n*nbColumns)+p];
       				var innerArrayRealValues = boxPlotRealValues[(n*nbColumns)+p];
       				var innerArrayExtremesNormalizedValues = boxNormalizedExtremesValues[(n*nbColumns)+p];
@@ -1547,6 +1549,7 @@ $.extend(theOutputBinding, {
       		var coordinatesArray = hexbin(points);
       	
       		for (var p = 0; p < nbRows*nbColumns; p++) {	
+      		  if (cellPop[p] == 0) {continue;}
       			var innerArrayNormalizedValues = boxPlotNormalizedValues[p];
       			var innerArrayRealValues = boxPlotRealValues[p];
       			var innerArrayExtremesNormalizedValues = boxNormalizedExtremesValues[p];
@@ -1714,6 +1717,7 @@ $.extend(theOutputBinding, {
           // Hexagonal Line
           //////////////////////////////////////////////////////////////////////////    
         	for (var indice = 0; indice < nbRows*nbColumns; indice++) {
+        	  if (cellPop[indice] == 0) { continue; }
       			innerArrayNormalizedValues= lineNormalizedValues[indice];				
       			innerArrayRealValues= lineRealValues[indice];
       			var arrayValues = [];

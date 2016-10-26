@@ -1,7 +1,4 @@
 ## BUGS
-* Boxplot, Star, Line : empty cells -> NA
-* Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D
-* Names plot : enlever ?
 * Crash when only one variable selected
 * Crash when duplicate rownames in data import (when rownames checked)
 
@@ -26,6 +23,9 @@
 * save R session
 * isolate train in graph var choice
 * isolate ok.data() in graph panel
+* Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D, et à cacher quand 0 obs
+* Names plot : enlever ?
+* Line plot empty cell : enlever cercles
 
 ## Wishlist
 * Internationalization

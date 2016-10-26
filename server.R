@@ -37,7 +37,6 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
                    nbColumns= som$grid$ydim,
                    topology= ifelse(som$grid$topo == "rectangular", 
                                     'rectangular', "hexagonal"))
-  #   superclassColor <- substr(terrain.colors(length(unique(superclass))), 1, 7)
   n.sc <- length(unique(superclass))
   superclassColor <- getPalette(palsc, n.sc)
   
