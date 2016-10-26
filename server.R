@@ -184,18 +184,19 @@ shinyServer(function(input, output, session) {
   ## Panel "Import Data"
   #############################################################################
 
-  # Current train data
+  # Current imported data
   ok.data <- reactive({
-    if (is.null(input$file1))
+    if (is.null(input$dataFile))
       return(NULL)
-    
     the.sep <- switch(input$sep, "Comma ','"=",", "Semicolon ';'"=";", 
                       "Tab"="\t", "Space"=" ")
     the.quote <- switch(input$quote, "None"="","Double Quote \""='"',
                         "Single Quote '"="'")
     the.dec <- switch(input$dec, "Period '.'"=".", "Comma ','"=",")
-    read.table(input$file1$datapath, header=input$header,
-               sep=the.sep, quote=the.quote, dec=the.dec)
+    data <- try(read.table(input$dataFile$datapath, header=input$header,
+                           sep=the.sep, quote=the.quote, dec=the.dec))
+    if(class(data) == "try-error") return(NULL)
+    data
   })
   
   # data preview table
@@ -204,6 +205,14 @@ shinyServer(function(input, output, session) {
     if (is.null(d.input)) 
       return(NULL)
     data.frame(rownames= rownames(ok.data()), d.input)
+  })
+  
+  # data import message
+  output$dataImportMessage <- renderUI({
+    if (is.null(input$dataFile)) 
+      return(h4("Data preview should appear here after import."))
+    if (! is.null(input$dataFile) & is.null(ok.data())) 
+      return(h4("Error during import: try different import parameters, and check that file is a text or csv table."))
   })
 
   #############################################################################

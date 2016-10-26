@@ -21,11 +21,11 @@ shinyUI(fluidPage(
              includeHTML("js/word-cloud.js"),
              
              h2("Import your data"), 
-             h4("Set the import parameters so that the data table appears correctly."),
              fluidRow(
                column(4,
                       wellPanel(
-                        fileInput('file1', 'Choose CSV/TXT File'),
+                        fileInput('dataFile', 'Choose CSV/TXT File'),
+                        HTML("<b>Import parameters</b>"),
                         checkboxInput('header', ' Header?', TRUE), 
                         fluidRow(column(4, p('Separator:')), 
                                  column(8, selectInput('sep', NULL,
@@ -40,7 +40,9 @@ shinyUI(fluidPage(
                                                        c("Period '.'", "Comma ','"),
                                                        "Period '.'")))
                         )),
-               column(8, dataTableOutput("dataView")))),
+               column(8, 
+                      uiOutput("dataImportMessage"), 
+                      dataTableOutput("dataView")))),
     tabPanel("Train", 
              wellPanel(fluidRow(column(2, h3("Map info:")),
                                 column(10, verbatimTextOutput("Message")))),
