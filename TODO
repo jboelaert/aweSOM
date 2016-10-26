@@ -1,5 +1,4 @@
 ## BUGS
-* Crash when only one variable selected
 * Crash when duplicate rownames in data import (when rownames checked)
 * Fix rownames
 

@@ -245,12 +245,11 @@ shinyServer(function(input, output, session) {
   # Update train variable options on data change
   output$trainVarOptions <- renderUI({
     if (is.null(ok.data())) return()
-    selected <- sapply(ok.data(), class) %in% c("integer", "numeric")
-    selected <- selected[apply(ok.data()[, selected], 2, sd, na.rm= T) != 0]
-    names(selected) <- colnames(ok.data())
-    
+    isnum <- sapply(ok.data(), class) %in% c("integer", "numeric")
+    names(isnum) <- colnames(ok.data())
+
     lapply(colnames(ok.data()), function(var) {
-      fluidRow(column(1, checkboxInput(paste0("trainVarChoice", var), NULL, unname(selected[var]))), 
+      fluidRow(column(1, checkboxInput(paste0("trainVarChoice", var), NULL, unname(isnum[var]))), 
                column(2, numericInput(paste0("trainVarWeight", var), NULL, value= 1, min= 0, max= 1e3)), 
                column(9, p(var)))
     })
@@ -312,7 +311,8 @@ shinyServer(function(input, output, session) {
       varWeights <- sapply(paste0("trainVarWeight", colnames(ok.data())), 
                            function(var) input[[var]])
       varSelected <- varSelected & varWeights > 0
-      if (!any(varSelected)) return(NULL)
+      if (sum(varSelected) < 2) 
+        return(list(dat= NULL, msg= "Select at least two variables (with non-zero weight)."))
       dat <- ok.data()[, varSelected]
       varWeights <- varWeights[varSelected]
       
@@ -326,29 +326,32 @@ shinyServer(function(input, output, session) {
         dat[, !varNumeric] <- as.data.frame(sapply(dat[, !varNumeric], as.numeric))
       }
       
-      # Check for constant variables (if so, exclude and message)
-      varConstant <- apply(dat, 2, sd, na.rm= T) == 0
-      if (all(varConstant)) {
-        err.msg$constant <- "All selected variables are constant, training impossible."
-        return(NULL)
-      }
-      if (any(varConstant)) {
-        err.msg$constant <- paste0("Variables < ",
-                                   paste(colnames(dat)[varConstant], collape= ", "),
-                                  " > are constant, and will be removed for training.")
-        dat <- dat[, !varConstant]
-        varWeights <- varWeights[!varConstant]
-      }
-      
+      # Remove NAs
       nrow.withNA <- nrow(dat)
       dat <- as.matrix(na.omit(dat))
       if (nrow(dat) < nrow.withNA) {
         err.msg$NArows <- paste(nrow.withNA - nrow(dat), 
-                                 "observations contained missing values, and were removed.")
+                                "observations contained missing values, and were removed.")
       }
       if (nrow(dat) == 0) {
         err.msg$NArows <- "All observations contain missing values, training impossible."
-        return(NULL)
+        return(list(dat= NULL, msg= err.msg))
+      }
+      
+      # Check for constant variables (if so, exclude and message)
+      varConstant <- apply(dat, 2, sd, na.rm= T) == 0
+      if (any(varConstant)) {
+        err.msg$constant <- paste0("Variables < ",
+                                   ifelse(sum(varConstant) == 1, 
+                                          colnames(dat)[varConstant], 
+                                          paste(colnames(dat)[varConstant], collape= ", ")),
+                                  " > are constant, and will be removed for training.")
+        dat <- dat[, !varConstant]
+        varWeights <- varWeights[!varConstant]
+        if (sum(!varConstant) < 2) {
+          err.msg$allconstant <- "Less than two selected non-constant variables, training impossible."
+          return(list(dat= NULL, msg= err.msg))
+        }
       }
       
       ## Scale variables and apply normalized weights
