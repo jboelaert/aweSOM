@@ -220,9 +220,10 @@ shinyServer(function(input, output, session) {
   # Update choices for rownames column
   output$rownames.col <- renderUI({
     if (is.null(ok.data())) return()
-    selectInput(inputId= "rownames.col", label= "Rownames var:", 
-                choices= c("(None)", colnames(ok.data())),
-                selected= "(None)")
+    fluidRow(column(4, p("Rownames var:")), 
+             column(8, selectInput(inputId= "rownames.col", label= NULL, 
+                                   choices= c("(None)", colnames(ok.data())),
+                                   selected= "(None)")))
   })
   
   ## Current rownames
@@ -423,7 +424,10 @@ shinyServer(function(input, output, session) {
     }
     cat("## SOM summary:\n")
     summary(ok.som())
-    cat("\n## Quality measures:\n")
+    isolate(cat(paste0("Training options: rlen = ", input$trainRlen, 
+                       " ; alpha = (", input$trainAlpha1, ", ", input$trainAlpha2, ") ; ",
+                       "radius = (", input$trainRadius1, ", ", input$trainRadius2, ")")))
+    cat("\n\n## Quality measures:\n")
     cat("* Quantization error     : ", ok.qual()$err.quant, "\n")
     cat("* (% explained variance) : ", ok.qual()$err.varratio, "\n")
     cat("* Topographic error      : ", ok.qual()$err.topo, "\n")
