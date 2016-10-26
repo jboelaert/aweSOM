@@ -1,25 +1,23 @@
 ## BUGS
-* Crash when duplicate rownames in data import (when rownames checked)
-* Fix rownames
+* Boxplot : highlight doesn't work for other cells
+* No data file error messages
+* Warning une seule colonne csv
 
 ## TODO
+* check that sqrt(weights) where weights sum to one is correct
+* File locale
 * greyscale color
 * camemberts : ajouter % dans le texte
-* Boxplot : highlight doesn't work for other cells
 * Help messages
-* Data file error messages
 * hex grid on pca initialization ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
-* check that sqrt(weights) where weights sum to one is correct
 * serveur Strasbourg
 * barplot categorical
 * Third contrast option : no normalization
 * Star categorical realValue (ex : frondeur 1.62)
 * Barplot hex norm : 0-1
 * SVG save
-* Warning une seule colonne csv
-* File locale
 * save R session
 * isolate train in graph var choice
 * isolate ok.data() in graph panel
@@ -32,8 +30,8 @@
 * choices for graphs: median, prototypes
 * U-matrix distance
 * Polygon distance
-* scatterplot (2 var) par cellule, échelle commune
 * Distance of cells to active cell
+* scatterplot (2 var) par cellule, échelle commune
 * grid on the plots
 * légende (ggplot à part ?)
 * save to html

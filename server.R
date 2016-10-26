@@ -194,15 +194,8 @@ shinyServer(function(input, output, session) {
     the.quote <- switch(input$quote, "None"="","Double Quote \""='"',
                         "Single Quote '"="'")
     the.dec <- switch(input$dec, "Period '.'"=".", "Comma ','"=",")
-    if (input$rownames) {
-      the.table <- read.table(input$file1$datapath, header=input$header, 
-                              sep=the.sep, quote=the.quote, row.names=1,
-                              dec=the.dec)
-    } else {
-      the.table <- read.table(input$file1$datapath, header=input$header, 
-                              sep=the.sep, quote=the.quote, dec=the.dec)
-    }
-    the.table
+    read.table(input$file1$datapath, header=input$header,
+               sep=the.sep, quote=the.quote, dec=the.dec)
   })
   
   # data preview table
@@ -210,32 +203,7 @@ shinyServer(function(input, output, session) {
     d.input <- ok.data()
     if (is.null(d.input)) 
       return(NULL)
-
-    if (!is.null(input$rownames.col))
-      if (input$rownames.col != "(None)")
-        if (!any(duplicated(d.input[, input$rownames.col])))
-          try(row.names(d.input) <- as.character(d.input[, input$rownames.col]))
-
     data.frame(rownames= rownames(ok.data()), d.input)
-  })
-
-  # Update choices for rownames column
-  output$rownames.col <- renderUI({
-    if (is.null(ok.data())) return()
-    fluidRow(column(4, p("Rownames var:")), 
-             column(8, selectInput(inputId= "rownames.col", label= NULL, 
-                                   choices= c("(None)", colnames(ok.data())),
-                                   selected= "(None)")))
-  })
-  
-  ## Current rownames
-  ok.rownames <- reactive({
-    if (is.null(ok.data()))
-      return(NULL)
-    if (input$rownames.col != "(None)")
-      if (!any(duplicated(ok.data()[, input$rownames.col]))) 
-        return(as.character(ok.data()[, input$rownames.col]))
-    return(rownames(ok.data()))
   })
 
   #############################################################################
@@ -527,7 +495,7 @@ shinyServer(function(input, output, session) {
     if (is.null(ok.som())) return(NULL)
     isolate({
       tmp.numeric <- sapply(ok.data(), is.numeric)
-      fluidRow(column(4, p("Names variable:")), 
+      fluidRow(column(4, p("Observation names:")), 
                column(8, selectInput("plotNames", NULL,
                                      choices= c("(rownames)", colnames(ok.data())),
                                      selected= "(rownames)")))
@@ -583,7 +551,6 @@ shinyServer(function(input, output, session) {
       data <- NULL
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
-      #       data <- ok.rownames()[ok.trainrows()]
       data <- as.character(ok.data()[ok.trainrows(), input$plotVarOne])
     }
     

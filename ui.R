@@ -26,9 +26,7 @@ shinyUI(fluidPage(
                column(4,
                       wellPanel(
                         fileInput('file1', 'Choose CSV/TXT File'),
-                        fluidRow(column(6, checkboxInput('header', ' Header?', TRUE)), 
-                                 column(6, checkboxInput('rownames', ' Row names?', FALSE))), 
-                        uiOutput("rownames.col"),
+                        checkboxInput('header', ' Header?', TRUE), 
                         fluidRow(column(4, p('Separator:')), 
                                  column(8, selectInput('sep', NULL,
                                                        c("Comma ','","Semicolon ';'","Tab","Space"), 
