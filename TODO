@@ -1,16 +1,15 @@
 ## BUGS
-* Lines : changer le mécanisme de proximité
-* Boxplot, Star : empty cells -> NA
+* Boxplot, Star, Line : empty cells -> NA
 * Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D
 * Names plot : enlever ?
-* Hitmap : mouse focus cell and polygon
-* line : NA -> empty
 * Data file error messages
 * Crash when only one variable selected
 * Crash when duplicate rownames in data import (when rownames checked)
-* isolate ok.data() in graph panel
 
 ## TODO
+* hex grid on pca initialization ?
+* Hitmap : mouse focus cell and polygon
+* Lines : changer le mécanisme de proximité
 * check that sqrt(weights) where weights sum to one is correct
 * serveur Strasbourg
 * greyscale color
@@ -24,20 +23,15 @@
 * Warning une seule colonne csv
 * File locale
 * save R session
-* save data with clustering
-* Energy, Kaski-Lagus, % variance
-* Advanced training options
-* isolate train in var choice
-* pas d'update nom de variable à train si mêmes variables
+* isolate train in graph var choice
+* isolate ok.data() in graph panel
 * camemberts : ajouter % dans le texte
 
 ## Wishlist
 * Internationalization
-* variable weights
 * choices for graphs: median, prototypes
 * U-matrix distance
 * Polygon distance
-* PCA initialization
 * scatterplot (2 var) par cellule, échelle commune
 * Distance of cells to active cell
 * grid on the plots

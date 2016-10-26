@@ -315,7 +315,6 @@ shinyServer(function(input, output, session) {
       # Check that all variables are numeric, otherwise message and convert
       varNumeric <- sapply(dat, is.numeric)
       if (any(!varNumeric)) {
-        ## TODO get this message to print
         err.msg$numeric <- paste0("Variables < ",
                                   # ifelse(sum(!varNumeric) == 1, colnames(dat)[!varNumeric],
                                   #        paste(colnames(dat)[!varNumeric], collape= ", ")),
@@ -328,12 +327,10 @@ shinyServer(function(input, output, session) {
       # Check for constant variables (if so, exclude and message)
       varConstant <- apply(dat, 2, sd, na.rm= T) == 0
       if (all(varConstant)) {
-        ## TODO get this message to print
         err.msg$constant <- "All selected variables are constant, training impossible."
         return(NULL)
       }
       if (any(varConstant)) {
-        ## TODO get this message to print
         err.msg$constant <- paste0("Variables < ",
                                    paste(colnames(dat)[varConstant], collape= ", "),
                                   " > are constant, and will be removed for training.")
@@ -344,12 +341,10 @@ shinyServer(function(input, output, session) {
       nrow.withNA <- nrow(dat)
       dat <- as.matrix(na.omit(dat))
       if (nrow(dat) < nrow.withNA) {
-        ## TODO get this message to print
         err.msg$NArows <- paste(nrow.withNA - nrow(dat), 
                                  "observations contained missing values, and were removed.")
       }
       if (nrow(dat) == 0) {
-        ## TODO get this message to print
         err.msg$NArows <- "All observations contain missing values, training impossible."
         return(NULL)
       }
@@ -579,7 +574,7 @@ shinyServer(function(input, output, session) {
     getPlotParams(input$graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
                   input$palsc, input$palplot, cellNames)
-  })    
+  })
   
   ## Plot warning
   output$plotWarning <- renderText({
