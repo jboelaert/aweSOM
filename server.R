@@ -603,11 +603,15 @@ shinyServer(function(input, output, session) {
   # Current clustered data table
   ok.clustTable <- reactive({
     if (is.null(ok.sc()) | is.null(input$clustVariables)) return()
-    res <- data.frame(rownames= isolate(ok.rownames()), SOM.cell= ok.clust(), 
-                      Superclass= ok.sc()[ok.clust()], 
-                      isolate(ok.data()))[, input$clustVariables]
-    rownames(res) <- isolate(ok.rownames())
-    res
+    res <- data.frame(isolate(ok.data()), SOM.cell= NA, Superclass= NA)
+    res$rownames <- rownames(isolate(ok.data()))
+    isolate({
+      traindat <- ok.traindat()$dat
+      res[rownames(traindat), "traindat"] <- rownames(traindat)
+      res[rownames(traindat), "SOM.cell"] <- ok.clust()
+      res[rownames(traindat), "Superclass"] <- ok.sc()[ok.clust()]
+    })
+    res[, input$clustVariables]
   })
 
   # Display clustered data  
