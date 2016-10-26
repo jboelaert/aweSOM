@@ -28,7 +28,6 @@ getPalette <- function(pal, n) {
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
                           normtype= c("range", "contrast"), palsc, palplot, 
                           cellNames, plotOutliers) {
-  
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
   clustering <- factor(som$unit.classif, 1:nrow(som$grid$pts))
@@ -49,7 +48,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
               superclassColor= superclassColor, 
               cellNames= cellNames, 
               cellPop= unname(clust.table))
-  
+
   ## Traitement data si besoin :
   if (type == "Camembert") {
     if (is.numeric(data)) if (length(unique(data)) > 100) data <- cut(data, 100)
@@ -63,9 +62,9 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     } else data <- as.data.frame(data)
     if (type == "Color") 
       data <- as.data.frame(sapply(data, as.numeric))
-    
+
     nvar <- length(varnames)
-    
+
     if (type %in% c("Radar", "Line", "Barplot", "Color", "Star")) {
       ## Means by cell
       if (normtype == "range") {
@@ -106,6 +105,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     }
   }
   
+
   ## Paramètres spécifiques :
   if (type == "Camembert") {
     res$parts <- nvalues
@@ -536,7 +536,7 @@ shinyServer(function(input, output, session) {
                                                           "Barplot", "Boxplot", 
                                                           "Color", "Star", 
                                                           "Hitmap", "Line", 
-                                                          "Names")))
+                                                          "Names", "UMatrix")))
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
     # Obs names per cell for message box
@@ -562,10 +562,19 @@ shinyServer(function(input, output, session) {
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
       data <- as.character(ok.data()[ok.trainrows(), input$plotVarOne])
+    } else if (input$graphType == "UMatrix") {
+      plotVar <- NULL
+      proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
+      proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
+      proto.dataspace.dist[round(proto.gridspace.dist, 3) > 1] <- NA
+      proto.dataspace.dist[proto.gridspace.dist == 0] <- NA
+      data <- rowMeans(proto.dataspace.dist, na.rm= T)[ok.clust()]
+      plotVar <- "Mean distance to neighbours"
     }
     
     contrast <- ifelse(input$contrast, "contrast", "range")
-    getPlotParams(input$graphType, ok.som(), ok.sc(), 
+    graphType <- ifelse(input$graphType == "UMatrix", "Color", input$graphType)
+    getPlotParams(graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
                   input$palsc, input$palplot, cellNames, input$plotOutliers)
   })

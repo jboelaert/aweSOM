@@ -1,6 +1,7 @@
 ## BUGS
 * Hitmap fill with palette
 * Boxplot : highlight doesn't work for other cells
+* grey, terrain, cm... palette in color plots
 
 ## TODO
 * Help messages
@@ -8,6 +9,7 @@
 * File locale
 * camemberts : ajouter % dans le texte
 * hex grid on pca initialization ?
+* Kaski and U-Matrix: use unit.distances ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
 * serveur Strasbourg
