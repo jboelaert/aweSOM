@@ -52,6 +52,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   
   ## Traitement data si besoin :
   if (type == "Camembert") {
+    if (is.numeric(data)) if (length(unique(data)) > 100) data <- cut(data, 100)
     data <- as.factor(data)
     unique.values <- levels(data)
     nvalues <- nlevels(data)
@@ -97,6 +98,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
         normValues <- do.call(rbind, normValues)
         normValues <- apply(normValues, 2, function(x) 
           getPalette(palplot, 8)[cut(x, seq(.049, .951, length.out= 9))])
+        normValues[is.na(normValues)] <- "#FFFFFF"
       }
     } else if (type == "Boxplot") {
       normDat <- as.data.frame(sapply(data, function(x) (x - min(x)) / (max(x) - min(x))))

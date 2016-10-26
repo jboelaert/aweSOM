@@ -4,13 +4,10 @@
 * Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D
 * Names plot : enlever ?
 * Hitmap : mouse focus cell and polygon
-* Train : X et Y intervertis
-* color : NA -> white
 * line : NA -> empty
 * 0-sd variables crash
 * No train when no variables selected
 * Crash when duplicate rownames in data import (when rownames checked)
-* Camembert : select quali variable
 
 ## TODO
 * serveur Strasbourg
