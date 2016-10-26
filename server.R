@@ -531,11 +531,22 @@ shinyServer(function(input, output, session) {
     })
   })
     
-  ## Scree plot
-  output$screeplot <- renderPlot({
+  ## Dendrogram
+  output$plotDendrogram <- renderPlot({
     if (is.null(ok.som())) return()
-    plot(ok.hclust())
-    rect.hclust(ok.hclust(), k= input$kohSuperclass)
+    plot(ok.hclust(), xlab= "", main= "")
+    if (input$kohSuperclass > 1)
+      rect.hclust(ok.hclust(), k= input$kohSuperclass)
+  })
+  ## Scree plot
+  output$plotScreeplot <- renderPlot({
+    if (is.null(ok.som())) return()
+    plot(2:nrow(ok.som()$codes), rev(ok.hclust()$height), 
+         t= "b", xlab= "Nb. superclasses", ylab= "Height")
+    grid()
+    if (input$kohSuperclass > 1)
+      abline(h= mean(rev(ok.hclust()$height)[c(input$kohSuperclass, input$kohSuperclass - 1)]), 
+             col= 2)
   })
   
   ## Fancy JS Plots
