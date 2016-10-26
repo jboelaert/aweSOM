@@ -316,9 +316,7 @@ shinyServer(function(input, output, session) {
       varNumeric <- sapply(dat, is.numeric)
       if (any(!varNumeric)) {
         err.msg$numeric <- paste0("Variables < ",
-                                  # ifelse(sum(!varNumeric) == 1, colnames(dat)[!varNumeric],
-                                  #        paste(colnames(dat)[!varNumeric], collape= ", ")),
-                                  paste(colnames(dat)[!varNumeric], collape= ", "),
+                                  paste(colnames(dat)[!varNumeric], collapse= ", "),
                                   " > are not natively numeric, and will be forced to numeric.",
                                   " (This is probably a bad idea.)")
         dat[, !varNumeric] <- as.data.frame(sapply(dat[, !varNumeric], as.numeric))
@@ -354,15 +352,15 @@ shinyServer(function(input, output, session) {
       varWeights <- length(varWeights) * varWeights / sum(varWeights)
       dat <- t(sqrt(varWeights) * t(dat))
       
-      dat
+      list(dat= dat, msg= err.msg)
     })
   })
   
   ## Train SOM when button is hit
   ok.som <- reactive({
-    if (is.null(ok.traindat())) return(NULL)
+    dat <- ok.traindat()$dat
+    if (is.null(dat)) return(NULL)
     isolate({
-      dat <- ok.traindat()
       ## Initialization
       if (input$kohInit == "random") {
         init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
@@ -398,7 +396,6 @@ shinyServer(function(input, output, session) {
       res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                  rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
                  radius= c(input$trainRadius1, input$trainRadius2, init= init))
-      # res$msg <- msg
       res
     })
   })
@@ -421,7 +418,7 @@ shinyServer(function(input, output, session) {
   ## Current training vars
   ok.trainvars <- reactive({
     if (is.null(ok.som())) return(NULL)
-    isolate(colnames(ok.traindat()))
+    isolate(colnames(ok.traindat()$dat))
   })
   ## Current training rows (no NA)
   ok.trainrows <- reactive({
@@ -432,20 +429,21 @@ shinyServer(function(input, output, session) {
   ## Current quality measures when ok.som changes
   ok.qual <- reactive({
     if(!is.null(ok.som())) {
+      traindat <- ok.traindat()$dat
       ## BMU, Squared distance from obs to BMU
       bmu <- ok.som()$unit.classif
-      sqdist <- rowSums((ok.traindat() - ok.som()$codes[bmu, ])^2)
+      sqdist <- rowSums((traindat - ok.som()$codes[bmu, ])^2)
       
       ## Quantization error
       err.quant <- mean(sqdist)
 
       ## Interclass variance ratio
-      totalvar <- sum(apply(ok.traindat(), 2, var)) * 
-        (nrow(ok.traindat()) - 1) / nrow(ok.traindat())
+      totalvar <- sum(apply(traindat, 2, var)) * 
+        (nrow(traindat) - 1) / nrow(traindat)
       err.varratio <- 100 - round(100 * err.quant / totalvar, 2)
       
       ## Topographic error
-      bmu2 <- apply(ok.traindat(), 1, function(row) {
+      bmu2 <- apply(traindat, 1, function(row) {
         dist <- colSums((t(ok.som()$codes) - row)^2)
         order(dist)[2]
       })
@@ -465,13 +463,14 @@ shinyServer(function(input, output, session) {
   
   ## Training message
   output$Message <- renderPrint({
+    if (!is.null(ok.traindat()$msg)) {
+      cat(paste0("********** Warning: **********\n", 
+                 paste("* ", ok.traindat()$msg, collapse= "\n"), 
+                 "\n******************************\n\n"))
+    }
     if (is.null(ok.qual())) 
       return(cat("No map trained yet, click Train button."))
     
-    if (!is.null(ok.som()$msg)) {
-      cat("******************\nWarning:\n******************\n", 
-          ok.som()$msg, "\n\n")
-    }
     cat("## SOM summary:\n")
     summary(ok.som())
     isolate(cat(paste0("Training options: rlen = ", input$trainRlen, 
