@@ -202,7 +202,7 @@ shinyServer(function(input, output, session) {
   })
   
   # data preview table
-  output$view <- renderTable({
+  output$dataView <- renderDataTable({
     d.input <- ok.data()
     if (is.null(d.input)) 
       return(NULL)
@@ -212,10 +212,7 @@ shinyServer(function(input, output, session) {
         if (!any(duplicated(d.input[, input$rownames.col])))
           try(row.names(d.input) <- as.character(d.input[, input$rownames.col]))
 
-    if (ncol(d.input) > input$ncol.preview) 
-      d.input <- d.input[,1:input$ncol.preview]
-    
-    head(d.input, n= input$nrow.preview)
+    data.frame(rownames= rownames(ok.data()), d.input)
   })
 
   # Update choices for rownames column
@@ -553,15 +550,18 @@ shinyServer(function(input, output, session) {
   # Current clustered data table
   ok.clustTable <- reactive({
     if (is.null(ok.sc()) | is.null(input$clustVariables)) return()
-    data.frame(rownames= isolate(ok.rownames()), SOM.cell= ok.clust(), 
-               Superclass= ok.sc()[ok.clust()], 
-               isolate(ok.data()))[, input$clustVariables]
+    res <- data.frame(rownames= isolate(ok.rownames()), SOM.cell= ok.clust(), 
+                      Superclass= ok.sc()[ok.clust()], 
+                      isolate(ok.data()))[, input$clustVariables]
+    rownames(res) <- isolate(ok.rownames())
+    res
   })
 
   # Display clustered data  
   output$clustTable <- renderDataTable(ok.clustTable())
 
   # Download clustered data
-  output$clustDownload <- downloadHandler(filename= paste0("aweSOM-clust-", Sys.Date(), ".csv"), 
-                                          content= function(con) write.csv(ok.clustTable(), con, row.names= F))
+  output$clustDownload <- 
+    downloadHandler(filename= paste0("aweSOM-clust-", Sys.Date(), ".csv"), 
+                    content= function(con) write.csv(ok.clustTable()[, colnames(ok.clustTable()) != "rownames"], con)) 
 })

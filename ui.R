@@ -4,7 +4,7 @@ library(RColorBrewer)
 
 ## Organisation de la page
 shinyUI(fluidPage(
-  headerPanel(HTML("Kohcorico")),
+  headerPanel(HTML("aweSOM")),
   
   tabsetPanel(
     #### Panel 'Welcome, Import Data'
@@ -28,27 +28,21 @@ shinyUI(fluidPage(
                         fileInput('file1', 'Choose CSV/TXT File'),
                         fluidRow(column(6, checkboxInput('header', ' Header?', TRUE)), 
                                  column(6, checkboxInput('rownames', ' Row names?', FALSE))), 
-                        selectInput('sep', 'Separator:',
-                                    c("Comma ','","Semicolon ';'","Tab","Space"), 
-                                    "Comma ','"),
-                        selectInput('quote', 'Quote:',
-                                    c("None","Double Quote \"","Single Quote '"), 
-                                    'Double Quote "'),
-                        selectInput('dec', 'Decimal mark', 
-                                    c("Period '.'", "Comma ','"),
-                                    "Period '.'"),
-                        helpText("Note: The preview only shows a restricted
-                                 number of observations, the full set is imported."))),
-               column(8,
-                      fluidRow(
-                        column(2, p('Nb. rows preview:')),
-                        column(4, numericInput('nrow.preview', NULL, 20)), 
-                        column(2, p('Nb. cols preview:')),
-                        column(4, numericInput('ncol.preview', NULL, 10))),
-                      uiOutput("rownames.col"),
-                      tableOutput("view"))
-               )), 
-    
+                        uiOutput("rownames.col"),
+                        fluidRow(column(4, p('Separator:')), 
+                                 column(8, selectInput('sep', NULL,
+                                                       c("Comma ','","Semicolon ';'","Tab","Space"), 
+                                                       "Comma ','"))),
+                        fluidRow(column(4, p('Quote:')), 
+                                 column(8, selectInput('quote', NULL,
+                                                       c("None","Double Quote \"","Single Quote '"), 
+                                                       'Double Quote "'))),
+                        fluidRow(column(4, p('Decimal mark')), 
+                                 column(8, selectInput('dec', NULL, 
+                                                       c("Period '.'", "Comma ','"),
+                                                       "Period '.'")))
+                        )),
+               column(8, dataTableOutput("dataView")))),
     tabPanel("Train", 
              wellPanel(fluidRow(column(2, h3("Map info:")),
                                 column(10, verbatimTextOutput("Message")))),
