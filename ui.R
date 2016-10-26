@@ -145,7 +145,14 @@ shinyUI(fluidPage(
                                               HTML('<div id="thePlot" class="shiny-Plot"><svg /></div>'), 
                                               HTML('<br />'), 
                                               wellPanel(HTML('<p id="plot-names">Observation names will appear here.</p>')))
-                             )))
+                             ))), 
+    tabPanel("Clustered data", 
+             h4("Original data, SOM cells, and superclasses."),
+             fluidRow(
+               column(4,
+                      downloadButton("clustDownload", "Download (csv file)"),
+                      h4("Selected variables"),
+                      uiOutput("clustVariables")),
+               column(8, dataTableOutput("clustTable"))))
   )
-  
 ))

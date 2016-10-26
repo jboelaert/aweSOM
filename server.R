@@ -198,7 +198,6 @@ shinyServer(function(input, output, session) {
       the.table <- read.table(input$file1$datapath, header=input$header, 
                               sep=the.sep, quote=the.quote, dec=the.dec)
     }
-    
     the.table
   })
   
@@ -537,4 +536,32 @@ shinyServer(function(input, output, session) {
     }
     return(NULL)
   })
+  
+  
+  #############################################################################
+  ## Panel "Clustered Data"
+  #############################################################################
+  
+  # Update choices for rownames column
+  output$clustVariables <- renderUI({
+    if (is.null(ok.sc())) return()
+    isolate(selectInput(inputId= "clustVariables", label= NULL, multiple= T,
+                        choices= c("rownames", "Superclass", "SOM.cell", colnames(ok.data())),
+                        selected= c("rownames", "Superclass", "SOM.cell", colnames(ok.data())[1])))
+  })
+  
+  # Current clustered data table
+  ok.clustTable <- reactive({
+    if (is.null(ok.sc()) | is.null(input$clustVariables)) return()
+    data.frame(rownames= isolate(ok.rownames()), SOM.cell= ok.clust(), 
+               Superclass= ok.sc()[ok.clust()], 
+               isolate(ok.data()))[, input$clustVariables]
+  })
+
+  # Display clustered data  
+  output$clustTable <- renderDataTable(ok.clustTable())
+
+  # Download clustered data
+  output$clustDownload <- downloadHandler(filename= paste0("aweSOM-clust-", Sys.Date(), ".csv"), 
+                                          content= function(con) write.csv(ok.clustTable(), con, row.names= F))
 })
