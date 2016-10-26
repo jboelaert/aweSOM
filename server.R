@@ -6,6 +6,7 @@ library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
 getPalette <- function(pal, n) {
+  if(pal == "grey") return(as.list(grey(1:n / n)))
   if(pal == "rainbow") return(as.list(substr(rainbow(n), 1, 7)))
   if(pal == "heat") return(as.list(substr(heat.colors(n), 1, 7)))
   if(pal == "terrain") return(as.list(substr(terrain.colors(n), 1, 7)))
@@ -571,7 +572,7 @@ shinyServer(function(input, output, session) {
   
   ## Plot warning
   output$plotWarning <- renderText({
-    if ( ! input$palsc %in% c("viridis", "rainbow", "heat", "terrain", "topo", "cm")) {
+    if ( ! input$palsc %in% c("viridis", "grey", "rainbow", "heat", "terrain", "topo", "cm")) {
       if (input$kohSuperclass > brewer.pal.info[input$palsc, "maxcolors"]) {
         return(paste0("WARNING: Palette ", input$palsc, 
                       " does not support more than ", 

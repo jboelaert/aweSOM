@@ -1,14 +1,12 @@
 ## BUGS
+* Hitmap fill with palette
 * Boxplot : highlight doesn't work for other cells
-* No data file error messages
-* Warning une seule colonne csv
 
 ## TODO
+* Help messages
 * check that sqrt(weights) where weights sum to one is correct
 * File locale
-* greyscale color
 * camemberts : ajouter % dans le texte
-* Help messages
 * hex grid on pca initialization ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
