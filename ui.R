@@ -79,8 +79,7 @@ shinyUI(fluidPage(
                              fluidRow(column(1, HTML("<p><b>Use</b></p>")), 
                                       column(2, HTML("<p><b>Weight</b></p>")), 
                                       column(9, HTML("<p><b>Name</b></p>"))),
-                             uiOutput("trainVarOptions")#, uiOutput("trainVarChoice")
-                             ))),
+                             uiOutput("trainVarOptions")))),
 
     tabPanel("Graph", 
              fluidRow(column(4, 
@@ -94,10 +93,10 @@ shinyUI(fluidPage(
                                                                        "Barplot"= "Barplot", 
                                                                        "Boxplot"= "Boxplot",
                                                                        "Line"= "Line", 
-                                                                       "Star"= "Star", 
+                                                                       # "Star"= "Star", 
                                                                        "Heat"= "Color", 
-                                                                       "Pie"= "Camembert", 
-                                                                       "Names"= "Names"), 
+                                                                       "Pie"= "Camembert" #, "Names"= "Names"
+                                                                       ), 
                                                             selected= "Hitmap"))),
                              conditionalPanel('input.graphType == "Camembert" | input.graphType == "Color" | input.graphType == "Names"', 
                                               uiOutput("plotVarOne")),
