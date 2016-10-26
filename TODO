@@ -5,12 +5,13 @@
 * Names plot : enlever ?
 * Hitmap : mouse focus cell and polygon
 * line : NA -> empty
-* 0-sd variables crash
-* No train when no variables selected
+* Data file error messages
+* Crash when only one variable selected
 * Crash when duplicate rownames in data import (when rownames checked)
 * isolate ok.data() in graph panel
 
 ## TODO
+* check that sqrt(weights) where weights sum to one is correct
 * serveur Strasbourg
 * greyscale color
 * barplot categorical

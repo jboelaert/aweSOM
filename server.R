@@ -238,33 +238,46 @@ shinyServer(function(input, output, session) {
   ## Panel "Train"
   #############################################################################
   
-  # Update train variable choice on data change
-  output$varchoice <- renderUI({
+  # Update train variable options on data change
+  output$trainVarOptions <- renderUI({
     if (is.null(ok.data())) return()
-    selected <- colnames(ok.data())[sapply(ok.data(), class) %in%
-                                      c("integer", "numeric")]
+    selected <- sapply(ok.data(), class) %in% c("integer", "numeric")
     selected <- selected[apply(ok.data()[, selected], 2, sd, na.rm= T) != 0]
-    checkboxGroupInput(inputId="varchoice", label="Training variables:",
-                       choices=as.list(colnames(ok.data())),
-                       selected=as.list(selected))
+    names(selected) <- colnames(ok.data())
+    
+    lapply(colnames(ok.data()), function(var) {
+      fluidRow(column(1, checkboxInput(paste0("trainVarChoice", var), NULL, unname(selected[var]))), 
+               column(2, numericInput(paste0("trainVarWeight", var), NULL, value= 1, min= 0, max= 1e3)), 
+               column(9, p(var)))
+    })
   })
   # Update train variable choice on button click
   observe({
     input$varNum
-    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
-                             selected= isolate(as.list(colnames(ok.data())[
-                               sapply(ok.data(), class) %in% c("integer", "numeric")])))
+    if (is.null(ok.data())) return()
+    selectVars <- sapply(ok.data(), class) %in% c("integer", "numeric")
+    names(selectVars) <- colnames(ok.data())
+    lapply(colnames(ok.data()), function(var) {
+      updateCheckboxInput(session, paste0("trainVarChoice", var), value= unname(selectVars[var]))
+    })
   })
   observe({
     input$varAll
-    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
-                             selected= isolate(as.list(colnames(ok.data()))))
+    if (is.null(ok.data())) return()
+    lapply(colnames(ok.data()), function(var) {
+      updateCheckboxInput(session, paste0("trainVarChoice", var), value= T)
+    })
   })
   observe({
     input$varNone
-    updateCheckboxGroupInput(session, "varchoice", label= NULL, choices= NULL, 
-                             selected= NA)
+    if (is.null(ok.data())) return()
+    euss <- rep(F, ncol(ok.data()))
+    names(euss) <- colnames(ok.data())
+    lapply(colnames(ok.data()), function(var) {
+      updateCheckboxInput(session, paste0("trainVarChoice", var), value= unname(euss[var]))
+    })
   })
+  
   # Update grid dimension on data update
   observe({
     if (is.null(ok.data())) return()
@@ -282,73 +295,117 @@ shinyServer(function(input, output, session) {
     updateNumericInput(session, "trainRadius2", value= -radius)
   })
   
-  ## Train the SOM when the button is hit (first make the training dataset)
+  ## Build training data when train button is hit
   ok.traindat <- reactive({
-    if (input$trainbutton > 0) {
-      isolate({
-        dat <- ok.data()[, input$varchoice]
-        msg <- NULL
-        num.cols <- sapply(dat[, input$varchoice], is.numeric)
-        if (any(!num.cols)) {
-          ## TODO get this message to print
-          msg <- paste0("Variables < ", 
-                        ifelse(sum(!num.cols) == 1, input$varchoice[!num.cols], 
-                               paste(input$varchoice[!num.cols], collape= ", ")), 
-                        " > are not natively numeric, and will be forced to numeric.", 
-                        " (This is probably a bad idea.)")
-          dat[, input$varchoice] <- as.data.frame(sapply(dat[, input$varchoice], as.numeric))
-        }
-        rownames(dat) <- ok.rownames()
-        dat <- as.matrix(na.omit(dat))
-        
-        if (input$trainscale) dat <- scale(dat)
-        dat
-      })
-    }
+    if (input$trainbutton == 0) return(NULL)
+    isolate({
+      if (is.null(ok.data())) return(NULL)
+      err.msg <- NULL
+      
+      # Get selected variables with non-zero weight
+      varSelected <- as.logical(sapply(paste0("trainVarChoice", colnames(ok.data())), 
+                                       function(var) input[[var]]))
+      varWeights <- sapply(paste0("trainVarWeight", colnames(ok.data())), 
+                           function(var) input[[var]])
+      varSelected <- varSelected & varWeights > 0
+      if (!any(varSelected)) return(NULL)
+      dat <- ok.data()[, varSelected]
+      varWeights <- varWeights[varSelected]
+      
+      # Check that all variables are numeric, otherwise message and convert
+      varNumeric <- sapply(dat, is.numeric)
+      if (any(!varNumeric)) {
+        ## TODO get this message to print
+        err.msg$numeric <- paste0("Variables < ",
+                                  # ifelse(sum(!varNumeric) == 1, colnames(dat)[!varNumeric],
+                                  #        paste(colnames(dat)[!varNumeric], collape= ", ")),
+                                  paste(colnames(dat)[!varNumeric], collape= ", "),
+                                  " > are not natively numeric, and will be forced to numeric.",
+                                  " (This is probably a bad idea.)")
+        dat[, !varNumeric] <- as.data.frame(sapply(dat[, !varNumeric], as.numeric))
+      }
+      
+      # Check for constant variables (if so, exclude and message)
+      varConstant <- apply(dat, 2, sd, na.rm= T) == 0
+      if (all(varConstant)) {
+        ## TODO get this message to print
+        err.msg$constant <- "All selected variables are constant, training impossible."
+        return(NULL)
+      }
+      if (any(varConstant)) {
+        ## TODO get this message to print
+        err.msg$constant <- paste0("Variables < ",
+                                   paste(colnames(dat)[varConstant], collape= ", "),
+                                  " > are constant, and will be removed for training.")
+        dat <- dat[, !varConstant]
+        varWeights <- varWeights[!varConstant]
+      }
+      
+      nrow.withNA <- nrow(dat)
+      dat <- as.matrix(na.omit(dat))
+      if (nrow(dat) < nrow.withNA) {
+        ## TODO get this message to print
+        err.msg$NArows <- paste(nrow.withNA - nrow(dat), 
+                                 "observations contained missing values, and were removed.")
+      }
+      if (nrow(dat) == 0) {
+        ## TODO get this message to print
+        err.msg$NArows <- "All observations contain missing values, training impossible."
+        return(NULL)
+      }
+      
+      ## Scale variables and apply normalized weights
+      if (input$trainscale) dat <- scale(dat)
+      varWeights <- length(varWeights) * varWeights / sum(varWeights)
+      dat <- t(sqrt(varWeights) * t(dat))
+      
+      dat
+    })
   })
+  
+  ## Train SOM when button is hit
   ok.som <- reactive({
-    if (! is.null(ok.traindat())) {
-      isolate({
-        dat <- ok.traindat()
-        ## Initialization
-        if (input$kohInit == "random") {
-          init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
-        } else if (input$kohInit %in% c("pca.sample", "pca")) {
-          # the most detailed grid axis is assigned to the first component
-          if (input$kohDimx >= input$kohDimy) {
-            x.ev <- 1
-            y.ev <- 2
-          } else {
-            x.ev <- 2
-            y.ev <- 1
-          }
-          # perform PCA (TODO: make hex grid on pca ?)
-          data.pca <- prcomp(dat, center= F, scale.= F)
-          x <- seq(from= quantile(data.pca$x[,x.ev], .025), 
-                   to= quantile(data.pca$x[,x.ev], .975),
-                   length.out= input$kohDimx)
-          y <- seq(from= quantile(data.pca$x[,y.ev], .025), 
-                   to= quantile(data.pca$x[,y.ev], .975),
-                   length.out= input$kohDimy)
-          base <- as.matrix(expand.grid(x=x, y=y))
-          if (input$kohInit == "pca.sample") {
-            ## As in SOMbrero, init to observations closest to a 2D PCA grid
-            closest.obs <- apply(base, 1, function(point) 
-              which.min(colSums((t(data.pca$x[,c(x.ev,y.ev)])-point)^2)))
-            init <- dat[closest.obs,]
-          } else if (input$kohInit == "pca") {
-            ## Pure PCA grid
-            base <- cbind(base, matrix(0, nrow(base))[, rep(1, ncol(data.pca$x) - 2)])
-            init <- base %*% t(data.pca$rotation)
-          }
-        } 
-        res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
-                   rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
-                   radius= c(input$trainRadius1, input$trainRadius2, init= init))
-        # res$msg <- msg
-        res
-      })
-    } 
+    if (is.null(ok.traindat())) return(NULL)
+    isolate({
+      dat <- ok.traindat()
+      ## Initialization
+      if (input$kohInit == "random") {
+        init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
+      } else if (input$kohInit %in% c("pca.sample", "pca")) {
+        # the most detailed grid axis is assigned to the first component
+        if (input$kohDimx >= input$kohDimy) {
+          x.ev <- 1
+          y.ev <- 2
+        } else {
+          x.ev <- 2
+          y.ev <- 1
+        }
+        # perform PCA (TODO: make hex grid on pca ?)
+        data.pca <- prcomp(dat, center= F, scale.= F)
+        x <- seq(from= quantile(data.pca$x[,x.ev], .025), 
+                 to= quantile(data.pca$x[,x.ev], .975),
+                 length.out= input$kohDimx)
+        y <- seq(from= quantile(data.pca$x[,y.ev], .025), 
+                 to= quantile(data.pca$x[,y.ev], .975),
+                 length.out= input$kohDimy)
+        base <- as.matrix(expand.grid(x=x, y=y))
+        if (input$kohInit == "pca.sample") {
+          ## As in SOMbrero, init to observations closest to a 2D PCA grid
+          closest.obs <- apply(base, 1, function(point) 
+            which.min(colSums((t(data.pca$x[,c(x.ev,y.ev)])-point)^2)))
+          init <- dat[closest.obs,]
+        } else if (input$kohInit == "pca") {
+          ## Pure PCA grid
+          base <- cbind(base, matrix(0, nrow(base))[, rep(1, ncol(data.pca$x) - 2)])
+          init <- base %*% t(data.pca$rotation)
+        }
+      } 
+      res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
+                 rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
+                 radius= c(input$trainRadius1, input$trainRadius2, init= init))
+      # res$msg <- msg
+      res
+    })
   })
   
   ## Get clustering when ok.som changes
@@ -368,13 +425,13 @@ shinyServer(function(input, output, session) {
   
   ## Current training vars
   ok.trainvars <- reactive({
-    if(!is.null(ok.som()))
-      isolate(input$varchoice)
+    if (is.null(ok.som())) return(NULL)
+    isolate(colnames(ok.traindat()))
   })
   ## Current training rows (no NA)
   ok.trainrows <- reactive({
-    if(!is.null(ok.som()))
-      rowSums(is.na(ok.data()[, isolate(input$varchoice)])) == 0
+    if (is.null(ok.som())) return(NULL)
+    isolate(rowSums(is.na(ok.data()[, ok.trainvars()])) == 0)
   })
   
   ## Current quality measures when ok.som changes
@@ -448,30 +505,32 @@ shinyServer(function(input, output, session) {
 
   ## Update variable selection for graphs
   output$plotVarOne <- renderUI({
-    if (is.null(ok.data())) return()
-    fluidRow(column(4, p("Plot variable:")), 
-             column(8, selectInput("plotVarOne", NULL, choices= colnames(ok.data()), 
-                selected= ok.trainvars()[1])))
+    if (is.null(ok.som())) return(NULL)
+    isolate({
+      fluidRow(column(4, p("Plot variable:")), 
+               column(8, selectInput("plotVarOne", NULL, choices= colnames(ok.data()), 
+                                     selected= ok.trainvars()[1])))
+    })
   })
   output$plotVarMult <- renderUI({
-    data <- ok.data()
-    if (is.null(data)) return()
-    tmp.numeric <- sapply(data, is.numeric)
-    fluidRow(column(4, p("Plot variables:")), 
-             column(8, selectInput("plotVarMult", NULL, multiple= T,
-                                   choices= colnames(data)[tmp.numeric],
-                                   # selected= colnames(data)[tmp.numeric][1:min(5, sum(tmp.numeric))])
-                                   # selected= ok.trainvars()[1:min(5, length(ok.trainvars()))])
-                                   selected= ok.trainvars()[1:length(ok.trainvars())])))
+    if (is.null(ok.som())) return(NULL)
+    isolate({
+      tmp.numeric <- sapply(ok.data(), is.numeric)
+      fluidRow(column(4, p("Plot variables:")), 
+               column(8, selectInput("plotVarMult", NULL, multiple= T,
+                                     choices= colnames(ok.data())[tmp.numeric],
+                                     selected= ok.trainvars()[tmp.numeric[ok.trainvars()]])))
+    })
   })
   output$plotNames <- renderUI({
-    data <- ok.data()
-    if (is.null(data)) return()
-    tmp.numeric <- sapply(data, is.numeric)
-    fluidRow(column(4, p("Names variable:")), 
-             column(8, selectInput("plotNames", NULL,
-                                   choices= c("(rownames)", colnames(data)),
-                                   selected= "(rownames)")))
+    if (is.null(ok.som())) return(NULL)
+    isolate({
+      tmp.numeric <- sapply(ok.data(), is.numeric)
+      fluidRow(column(4, p("Names variable:")), 
+               column(8, selectInput("plotNames", NULL,
+                                     choices= c("(rownames)", colnames(ok.data())),
+                                     selected= "(rownames)")))
+    })
   })
     
   ## Scree plot
@@ -522,7 +581,7 @@ shinyServer(function(input, output, session) {
                   input$palsc, input$palplot, cellNames)
   })    
   
-  ## Fancy JS Plots
+  ## Plot warning
   output$plotWarning <- renderText({
     if ( ! input$palsc %in% c("viridis", "rainbow", "heat", "terrain", "topo", "cm")) {
       if (input$kohSuperclass > brewer.pal.info[input$palsc, "maxcolors"]) {
