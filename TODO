@@ -5,7 +5,7 @@
 ## TODO
 * greyscale color
 * camemberts : ajouter % dans le texte
-* Boxplot : option hide outliers
+* Boxplot : highlight doesn't work for other cells
 * Help messages
 * Data file error messages
 * hex grid on pca initialization ?

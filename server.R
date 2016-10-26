@@ -26,7 +26,7 @@ getPalette <- function(pal, n) {
 ## Fonction qui génère les paramètres à passer à JS
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
                           normtype= c("range", "contrast"), palsc, palplot, 
-                          cellNames) {
+                          cellNames, plotOutliers) {
   
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
@@ -151,8 +151,13 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     boxes.real <- lapply(split(data, clustering), boxplot, plot= F)
     res$boxPlotNormalizedValues <- unname(lapply(boxes.norm, function(x) unname(as.list(as.data.frame(x$stats)))))
     res$boxPlotRealValues <- unname(lapply(boxes.real, function(x) unname(as.list(as.data.frame(x$stats)))))
-    res$boxNormalizedExtremesValues <- unname(lapply(boxes.norm, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
-    res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) as.list(unname(split(x$out, factor(x$group, levels= 1:nvar))))))
+    if (plotOutliers) {
+      res$boxNormalizedExtremesValues <- unname(lapply(boxes.norm, function(x) unname(split(x$out, factor(x$group, levels= 1:nvar)))))
+      res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) as.list(unname(split(x$out, factor(x$group, levels= 1:nvar))))))
+    } else {
+      res$boxNormalizedExtremesValues <- unname(lapply(boxes.norm, function(x) lapply(1:nvar, function(y) numeric(0))))
+      res$boxRealExtremesValues <- unname(lapply(boxes.real, function(x) lapply(1:nvar, function(y) numeric(0))))
+    }
   } else if (type == "Color") {
     res$activate <- TRUE
     res$colorNormalizedValues <- normValues
@@ -571,7 +576,7 @@ shinyServer(function(input, output, session) {
     contrast <- ifelse(input$contrast, "contrast", "range")
     getPlotParams(input$graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
-                  input$palsc, input$palplot, cellNames)
+                  input$palsc, input$palplot, cellNames, input$plotOutliers)
   })
   
   ## Plot warning

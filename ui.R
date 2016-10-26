@@ -116,6 +116,8 @@ shinyUI(fluidPage(
                                                                       'input.graphType == "Color" | ', 
                                                                       'input.graphType == "Star"'), 
                                                                checkboxInput("contrast", "Enhanced contrast", value= T)), 
+                                              conditionalPanel('input.graphType == "Boxplot"', 
+                                                               checkboxInput("plotOutliers", "Plot outliers", value= T)),
                                               conditionalPanel('input.graphType != "Color"', 
                                                                fluidRow(column(4, p("Superclass palette")),
                                                                         column(8, selectInput("palsc", NULL, 
