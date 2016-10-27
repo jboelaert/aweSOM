@@ -1,5 +1,5 @@
 ## BUGS
-* Hitmap fill with palette
+* Hitmap fill polygon with palette
 * Boxplot : highlight doesn't work for other cells
 * Boxplot : download doesn't work well
 

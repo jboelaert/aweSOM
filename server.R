@@ -24,11 +24,47 @@ getPalette <- function(pal, n) {
   }
 }
 
+getPalette <- function(pal, n, reverse= F) {
+  if(pal == "grey") {
+    res <- grey(1:n / n)
+  } else if(pal == "rainbow") { 
+    res <- substr(rainbow(n), 1, 7) 
+  } else if(pal == "heat") { 
+    res <- substr(heat.colors(n), 1, 7) 
+  } else if(pal == "terrain") { 
+    res <- substr(terrain.colors(n), 1, 7) 
+  } else if(pal == "topo") { 
+    res <- substr(topo.colors(n), 1, 7) 
+  } else if(pal == "cm") { 
+    res <- substr(cm.colors(n), 1, 7) 
+  } else if (pal == "viridis") {
+    if (n == 1) {
+      res <- substr(viridis(3), 1, 7)[1]
+    } else if (n == 2) {
+      res <- substr(viridis(3), 1, 7)[c(1,3)]
+    } else 
+      res <- substr(viridis(n), 1, 7)
+  } else {
+    if (n == 1) {
+      res <- brewer.pal(3, pal)[1]
+    } else if (n == 2) {
+      res <- brewer.pal(3, pal)[c(1,3)]
+    } else 
+      res <- brewer.pal(n, pal)
+  }
+  if (length(res) == 1) 
+    res <- list(res)
+  if (reverse) 
+    res <- rev(res)
+  res
+}
+
+
 ############################
 ## Fonction qui génère les paramètres à passer à JS
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
                           normtype= c("range", "contrast"), palsc, palplot, 
-                          cellNames, plotOutliers) {
+                          cellNames, plotOutliers, reversePal) {
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
   clustering <- factor(som$unit.classif, 1:nrow(som$grid$pts))
@@ -97,7 +133,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
         ## 8 colors (equal-sized bins of values) of selected palette
         normValues <- do.call(rbind, normValues)
         normValues <- apply(normValues, 2, function(x) 
-          getPalette(palplot, 8)[cut(x, seq(.049, .951, length.out= 9))])
+          getPalette(palplot, 8, reversePal)[cut(x, seq(.049, .951, length.out= 9))])
         normValues[is.na(normValues)] <- "#FFFFFF"
       }
     } else if (type == "Boxplot") {
@@ -111,7 +147,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   if (type == "Camembert") {
     res$parts <- nvalues
     res$label <- unique.values
-    res$labelColor <- getPalette(palplot, nvalues)
+    res$labelColor <- getPalette(palplot, nvalues, reversePal)
     res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
     res$pieRealSize <- unname(clust.table)
     res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
@@ -124,7 +160,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   } else if (type == "Radar") {
     res$parts <- nvar
     res$label <- varnames
-    res$labelColor <- getPalette(palplot, nvar)
+    res$labelColor <- getPalette(palplot, nvar, reversePal)
     res$radarNormalizedSize <- unname(clust.table > 0)
     res$radarRealSize <- unname(clust.table)
     res$radarNormalizedValues <- normValues
@@ -141,13 +177,13 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$nbBatons <- nvar
     res$isHist <- FALSE
     res$label <- varnames
-    res$labelColor <- getPalette(palplot, nvar)
+    res$labelColor <- getPalette(palplot, nvar, reversePal)
     res$batonNormalizedValues <- normValues
     res$batonRealValues <- realValues
   } else if (type == "Boxplot") {
     res$nbBox <- nvar
     res$label <- varnames
-    res$labelColor <- getPalette(palplot, nvar)
+    res$labelColor <- getPalette(palplot, nvar, reversePal)
     
     boxes.norm <- lapply(split(normDat, clustering), boxplot, plot= F)
     boxes.real <- lapply(split(data, clustering), boxplot, plot= F)
@@ -553,7 +589,7 @@ shinyServer(function(input, output, session) {
                      ok.som()$grid$ydim, ok.som()$grid$xdim)
     filled.contour(1:ok.som()$grid$ydim, 1:ok.som()$grid$xdim, 
                    values[, ok.som()$grid$xdim:1], 
-                   color.palette= function(x) paste0(getPalette(input$palplot, x), "FF"))
+                   color.palette= function(x) paste0(getPalette(input$palplot, x, input$plotRevPal), "FF"))
   })
   
   ## Fancy JS Plots
@@ -602,7 +638,8 @@ shinyServer(function(input, output, session) {
     graphType <- ifelse(input$graphType == "UMatrix", "Color", input$graphType)
     getPlotParams(graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
-                  input$palsc, input$palplot, cellNames, input$plotOutliers)
+                  input$palsc, input$palplot, cellNames, 
+                  input$plotOutliers, input$plotRevPal)
   })
   
   ## Plot warning
