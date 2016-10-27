@@ -6,12 +6,13 @@ library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
 getPalette <- function(pal, n) {
-  if(pal == "grey") return(as.list(grey(1:n / n)))
-  if(pal == "rainbow") return(as.list(substr(rainbow(n), 1, 7)))
-  if(pal == "heat") return(as.list(substr(heat.colors(n), 1, 7)))
-  if(pal == "terrain") return(as.list(substr(terrain.colors(n), 1, 7)))
-  if(pal == "topo") return(as.list(substr(topo.colors(n), 1, 7)))
-  if(pal == "cm") return(as.list(substr(cm.colors(n), 1, 7)))
+  if1list <- function(x) { if (length(x) == 1) return(list(x)) ; x}
+  if(pal == "grey") return(if1list(grey(1:n / n)))
+  if(pal == "rainbow") return(if1list(substr(rainbow(n), 1, 7)))
+  if(pal == "heat") return(if1list(substr(heat.colors(n), 1, 7)))
+  if(pal == "terrain") return(if1list(substr(terrain.colors(n), 1, 7)))
+  if(pal == "topo") return(if1list(substr(topo.colors(n), 1, 7)))
+  if(pal == "cm") return(if1list(substr(cm.colors(n), 1, 7)))
   if (pal == "viridis") {
     if (n == 1) return(list(substr(viridis(3), 1, 7)[1]))
     if (n == 2) return(substr(viridis(3), 1, 7)[c(1,3)])
