@@ -1,0 +1,6 @@
+## exports
+# standard functions
+export(aweSOM)
+
+#useDynLib(SOMbrero)
+

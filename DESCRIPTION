@@ -1,0 +1,10 @@
+Package: aweSOM
+Title: aweSOM interactive Kohonen
+Version: 0.1
+Date: 2016-10-27
+Authors@R: c(person("Julien", "Boelaert", role= "aut", email="jubo.stats@gmail.com"))
+Author: Julien Boelaert
+Maintainer: Julien Boelaert <jubo.stats@gmail.com>
+Description: aweSOM interactive interface and plots for (Kohonen) self-organizing maps.
+Depends: R (>= 3.0), RColorBrewer, shiny, e1071, viridis
+License: GPL (>= 2)
