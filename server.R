@@ -457,7 +457,8 @@ shinyServer(function(input, output, session) {
   
   ok.dist <- reactive({
     if (is.null(ok.som())) return(NULL)
-    proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
+    # proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
+    proto.gridspace.dist <- unit.distances(ok.som()$grid, F)
     proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
     neigh <- round(proto.gridspace.dist, 3) == 1
     proto.dataspace.dist.neigh <- proto.dataspace.dist

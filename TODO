@@ -1,19 +1,18 @@
 ## BUGS
-* Hitmap fill polygon with palette
 * Boxplot : highlight doesn't work for other cells
 * Boxplot : download doesn't work well
 
 ## TODO
-* Square barplot to .95
-* Boxplots too thin
-* Help messages
+* Scree plot -> % eplained variance
 * About panel
-* check that sqrt(weights) where weights sum to one is correct
+* Hitmap fill polygon with palette
+* Square barplot to .95
 * better pix download filename
-* File locale
+* Warning that smooth is not exact for hexagon?
+* Boxplots & barplot : change geometry (fatter bars, square bar to max .95, bar 0 = 0...)
+* Help messages
 * camemberts : ajouter % dans le texte
 * hex grid on pca initialization ?
-* Neighbour criterion (in dists): use unit.distances ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
 * serveur Strasbourg
@@ -28,15 +27,24 @@
 * Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D, et à cacher quand 0 obs
 * Names plot : enlever ?
 * Line plot empty cell : enlever cercles
+* Adjustable size for non-java plots
+* picture download faster
+
+## Check
+* check that sqrt(weights) where weights sum to one is correct
+* Neighbour criterion (in dists): use unit.distances ?
 
 ## Wishlist
+* File locale
 * Internationalization
+* SC graph options : none, background, foreground
 * choices for graphs: median, prototypes
 * Polygon distance
 * Distance of cells to active cell
 * Distance plot: 4-way or 6-way cell-to-cell distance triangles.
 * scatterplot (2 var) par cellule, échelle commune
 * grid on the plots
+* other clustering (pam)
 * légende (ggplot à part ?)
 * save to html
 * mixScale
