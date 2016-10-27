@@ -5,6 +5,7 @@
 * grey, terrain, cm... palette in color plots
 
 ## TODO
+* Square barplot to .95
 * Boxplots too thin
 * Help messages
 * About panel
@@ -13,7 +14,7 @@
 * File locale
 * camemberts : ajouter % dans le texte
 * hex grid on pca initialization ?
-* Kaski and U-Matrix: use unit.distances ?
+* Neighbour criterion (in dists): use unit.distances ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
 * serveur Strasbourg

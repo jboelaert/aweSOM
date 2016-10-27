@@ -416,6 +416,19 @@ shinyServer(function(input, output, session) {
     isolate(rowSums(is.na(ok.data()[, ok.trainvars()])) == 0)
   })
   
+  ok.dist <- reactive({
+    if (is.null(ok.som())) return(NULL)
+    proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
+    proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
+    neigh <- round(proto.gridspace.dist, 3) == 1
+    proto.dataspace.dist.neigh <- proto.dataspace.dist
+    proto.dataspace.dist.neigh[!neigh] <- NA
+    list(proto.grid.dist= proto.gridspace.dist, 
+         neigh.matrix= neigh, 
+         proto.data.dist= proto.dataspace.dist, 
+         proto.data.dist.neigh= proto.dataspace.dist.neigh)
+  })
+  
   ## Current quality measures when ok.som changes
   ok.qual <- reactive({
     if(!is.null(ok.som())) {
@@ -437,13 +450,10 @@ shinyServer(function(input, output, session) {
         dist <- colSums((t(ok.som()$codes) - row)^2)
         order(dist)[2]
       })
-      proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
-      err.topo <- mean(round(proto.gridspace.dist[cbind(bmu, bmu2)], 3) > 1)
+      err.topo <- mean(!ok.dist()$neigh.matrix[cbind(bmu, bmu2)])
       
       ## Kaski-Lagus error
-      proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
-      proto.dataspace.dist[round(proto.gridspace.dist, 3) > 1] <- NA
-      err.kaski <- e1071::allShortestPaths(proto.dataspace.dist)$length[cbind(bmu, bmu2)]
+      err.kaski <- e1071::allShortestPaths(ok.dist()$proto.data.dist.neigh)$length[cbind(bmu, bmu2)]
       err.kaski <- mean(err.kaski + sqrt(sqdist))
       
       list(err.quant= err.quant, err.varratio= err.varratio, 
@@ -534,6 +544,15 @@ shinyServer(function(input, output, session) {
     if (input$kohSuperclass > 1)
       abline(h= mean(rev(ok.hclust()$height)[c(input$kohSuperclass, input$kohSuperclass - 1)]), 
              col= 2)
+  })
+  ## Smooth distance plot
+  output$plotSmoothDist <- renderPlot({
+    if (is.null(ok.som())) return()
+    values <- matrix(rowMeans(ok.dist()$proto.data.dist.neigh, na.rm= T), 
+                     ok.som()$grid$ydim, ok.som()$grid$xdim)
+    filled.contour(1:ok.som()$grid$ydim, 1:ok.som()$grid$xdim, 
+                   values[, ok.som()$grid$xdim:1], 
+                   color.palette= function(x) paste0(getPalette(input$palplot, x), "FF"))
   })
   
   ## Fancy JS Plots
