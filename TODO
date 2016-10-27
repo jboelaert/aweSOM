@@ -1,11 +1,15 @@
 ## BUGS
 * Hitmap fill with palette
 * Boxplot : highlight doesn't work for other cells
+* Boxplot : download doesn't work well
 * grey, terrain, cm... palette in color plots
 
 ## TODO
+* Boxplots too thin
 * Help messages
+* About panel
 * check that sqrt(weights) where weights sum to one is correct
+* better pix download filename
 * File locale
 * camemberts : ajouter % dans le texte
 * hex grid on pca initialization ?
@@ -28,9 +32,9 @@
 ## Wishlist
 * Internationalization
 * choices for graphs: median, prototypes
-* U-matrix distance
 * Polygon distance
 * Distance of cells to active cell
+* Distance plot: 4-way or 6-way cell-to-cell distance triangles.
 * scatterplot (2 var) par cellule, échelle commune
 * grid on the plots
 * légende (ggplot à part ?)

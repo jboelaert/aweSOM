@@ -347,6 +347,7 @@ shinyServer(function(input, output, session) {
     if (is.null(dat)) return(NULL)
     isolate({
       ## Initialization
+      set.seed(input$trainSeed)
       if (input$kohInit == "random") {
         init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
       } else if (input$kohInit %in% c("pca.sample", "pca")) {
@@ -381,6 +382,10 @@ shinyServer(function(input, output, session) {
       res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                  rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
                  radius= c(input$trainRadius1, input$trainRadius2, init= init))
+      ## save seed and set new
+      res$seed <- input$trainSeed
+      updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
+      
       res
     })
   })
@@ -460,7 +465,8 @@ shinyServer(function(input, output, session) {
     summary(ok.som())
     isolate(cat(paste0("Training options: rlen = ", input$trainRlen, 
                        " ; alpha = (", input$trainAlpha1, ", ", input$trainAlpha2, ") ; ",
-                       "radius = (", input$trainRadius1, ", ", input$trainRadius2, ").")))
+                       "radius = (", input$trainRadius1, ", ", input$trainRadius2, "), ", 
+                       "random seed = ", ok.som()$seed, ".")))
     cat("\n\n## Quality measures:\n")
     cat("* Quantization error     : ", ok.qual()$err.quant, "\n")
     cat("* (% explained variance) : ", ok.qual()$err.varratio, "\n")
