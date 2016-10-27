@@ -78,9 +78,9 @@ shinyUI(fluidPage(
                                       column(4, actionButton("varAll", "Select all variables")), 
                                       column(4, actionButton("varNone", "Unselect all variables"))),
                              p(),
-                             fluidRow(column(1, HTML("<p><b>Use</b></p>")), 
-                                      column(2, HTML("<p><b>Weight</b></p>")), 
-                                      column(9, HTML("<p><b>Name</b></p>"))),
+                             fluidRow(column(2, HTML("<p><b>Weight</b></p>")), 
+                                      column(8, HTML("<p><b>Variable</b></p>")), 
+                                      column(2, HTML("<p><b>Type</b></p>"))),
                              uiOutput("trainVarOptions")))),
 
     tabPanel("Graph", 

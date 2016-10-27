@@ -260,13 +260,15 @@ shinyServer(function(input, output, session) {
   # Update train variable options on data change
   output$trainVarOptions <- renderUI({
     if (is.null(ok.data())) return()
-    isnum <- sapply(ok.data(), class) %in% c("integer", "numeric")
-    names(isnum) <- colnames(ok.data())
-
+    varclass <- sapply(ok.data(), class)
+    names(varclass) <- colnames(ok.data())
+    isnum <- varclass %in% c("integer", "numeric")
+    names(isnum) <- names(varclass) <- colnames(ok.data())
+    
     lapply(colnames(ok.data()), function(var) {
-      fluidRow(column(1, checkboxInput(paste0("trainVarChoice", var), NULL, unname(isnum[var]))), 
-               column(2, numericInput(paste0("trainVarWeight", var), NULL, value= 1, min= 0, max= 1e3)), 
-               column(9, p(var)))
+      fluidRow(column(2, numericInput(paste0("trainVarWeight", var), NULL, value= 1, min= 0, max= 1e3)), 
+               column(8, checkboxInput(paste0("trainVarChoice", var), var, unname(isnum[var]))),  
+               column(2, p(varclass[var])))
     })
   })
   # Update train variable choice on button click
