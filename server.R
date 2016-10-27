@@ -578,12 +578,19 @@ shinyServer(function(input, output, session) {
   ## Scree plot
   output$plotScreeplot <- renderPlot({
     if (is.null(ok.som())) return()
-    plot(2:nrow(ok.som()$codes), rev(ok.hclust()$height), 
-         t= "b", xlab= "Nb. superclasses", ylab= "Height")
-    grid()
-    if (input$kohSuperclass > 1)
-      abline(h= mean(rev(ok.hclust()$height)[c(input$kohSuperclass, input$kohSuperclass - 1)]), 
-             col= 2)
+    ncells <- nrow(ok.som()$codes)
+    nvalues <- max(input$kohSuperclass, min(ncells, max(ceiling(sqrt(ncells)), 10)))
+    clust.var <- sapply(1:nvalues, function(k) {
+      clust <- cutree(ok.hclust(), k)
+      clust.means <- do.call(rbind, by(ok.som()$codes, clust, colMeans))[clust, ]
+      mean(rowSums((ok.som()$codes - clust.means)^2))
+    })
+    unexpl <- 100 * round(clust.var / 
+                            (sum(apply(ok.som()$codes, 2, var)) * (ncells - 1) / ncells), 3)
+    plot(unexpl, t= "b", ylim= c(0, 100),
+         xlab= "Nb. Superclasses", ylab= "% Unexpl. Variance")
+    grid()                      
+    abline(h= unexpl[input$kohSuperclass], col= 2)
   })
   ## Smooth distance plot
   output$plotSmoothDist <- renderPlot({
