@@ -74,6 +74,7 @@ $.extend(theOutputBinding, {
       // Barplot
       var nbBatons = data.nbBatons;
       var isHist = data.isHist;
+      var isCatBarplot = data.isCatBarplot;
 	    var label = data.label;
 	    var labelColor = data.labelColor;
       if(!Array.isArray(label)) {label= [label];}
@@ -840,6 +841,7 @@ $.extend(theOutputBinding, {
       					arrayValues[j] = [];
       					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
       					arrayValues[j].realValue = innerArrayRealValues[j];
+      					arrayValues[j].innerCellPop = cellPop[(n*nbColumns)+cpt]
       				}	
       							
       				var y = d3.scale.linear()
@@ -880,6 +882,9 @@ $.extend(theOutputBinding, {
       				bars.on('mouseenter', function (d, i) {
       					d3.select('#plot-message').text(function () { 
       						var ch=label[i]+": " + d.data.realValue;
+      						if (isCatBarplot) 
+      						  ch= ch + " (" + 
+      						    (100 * d.data.realValue / d.data.innerCellPop).toFixed(1) +  "%)";
       						return ch;	
       					});
 
@@ -1484,6 +1489,7 @@ $.extend(theOutputBinding, {
       				arrayValues[j] = [];
       				arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
       				arrayValues[j].realValue = innerArrayRealValues[j];
+      				arrayValues[j].innerCellPop = cellPop[indice]
       			}
             var y = d3.scale.linear()
       				.domain([0,nbBatons])
@@ -1517,7 +1523,10 @@ $.extend(theOutputBinding, {
       			
       			bars.on('mouseenter', function (d, i) {
       				d3.select('#plot-message').text(function () { 
-      					var ch=label[i]+": " + d.data.realValue;
+      					var ch=label[i]+": " + d.data.realValue 
+      					if (isCatBarplot) 
+      					  ch= ch + " (" + 
+    						  (100 * d.data.realValue / d.data.innerCellPop).toFixed(1) + "%)";
       					return ch;	
       				});
       				svg.selectAll("rect.r"+i)

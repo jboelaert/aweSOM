@@ -21,7 +21,8 @@ plotChoices <- list(MapInfo= c("Population map"= "Hitmap",
                                "Line"= "Line", 
                                # "Star"= "Star", 
                                "Heat"= "Color"), 
-                    Categorical= c("Pie"= "Camembert"))
+                    Categorical= c("Pie"= "Camembert", 
+                                   "Barplot"= "CatBarplot"))
 
 ################################################################################
 ## Global Functions
@@ -94,7 +95,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
               cellPop= unname(clust.table))
 
   ## Traitement data si besoin :
-  if (type == "Camembert") {
+  if (type %in% c("Camembert", "CatBarplot")) {
     if (is.numeric(data)) if (length(unique(data)) > 100) data <- cut(data, 100)
     data <- as.factor(data)
     unique.values <- levels(data)
@@ -167,6 +168,26 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
                                              }))
     res$pieRealValues <- unname(lapply(split(data, clustering), 
                                        function(x) unname(table(x))))
+  } else if (type == "CatBarplot") {
+    res$nbBatons <- nvalues
+    res$isHist <- FALSE
+    res$isCatBarplot <- TRUE
+    res$label <- unique.values
+    res$labelColor <- getPalette(palplot, nvalues, reversePal)
+    res$batonRealValues <- unname(lapply(split(data, clustering), 
+                                         function(x) unname(table(x))))
+    if (normtype == "contrast") {
+      maxValue <- max(do.call(c, lapply(split(data, clustering), 
+                                        function(x) {
+                                          if (!length(x)) return(rep(0, nvalues))
+                                          unname(table(x) / length(x))
+                                        })))
+    } else maxValue <- 1
+    res$batonNormalizedValues <- unname(lapply(split(data, clustering), 
+                                               function(x) {
+                                                 if (!length(x)) return(rep(0, nvalues))
+                                                 .02 + .98 * unname(table(x) / length(x)) / maxValue
+                                               }))
   } else if (type == "Radar") {
     res$parts <- nvar
     res$label <- varnames
@@ -186,6 +207,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
   } else if (type == "Barplot") {
     res$nbBatons <- nvar
     res$isHist <- FALSE
+    res$isCatBarplot <- FALSE
     res$label <- varnames
     res$labelColor <- getPalette(palplot, nvar, reversePal)
     res$batonNormalizedValues <- normValues
@@ -220,6 +242,10 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$wordClouds <- unname(split(data, clustering))
     res$nbWord <- unname(sapply(res$wordClouds, length))
   }
+  
+  if (type == "CatBarplot")
+    res$plotType <- "Barplot"
+  
   res
 }
 
@@ -625,11 +651,12 @@ shinyServer(function(input, output, session) {
   
   ## Fancy JS Plots
   output$thePlot <- reactive({
-    if (is.null(ok.som()) | !(input$graphType %in% c("Radar", "Camembert",
-                                                          "Barplot", "Boxplot", 
-                                                          "Color", "Star", 
-                                                          "Hitmap", "Line", 
-                                                          "Names", "UMatrix")))
+    if (is.null(ok.som()) | !(input$graphType %in% c("Radar", 
+                                                     "Camembert", "CatBarplot",
+                                                     "Barplot", "Boxplot", 
+                                                     "Color", "Star", 
+                                                     "Hitmap", "Line", 
+                                                     "Names", "UMatrix")))
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
     plot.data <- isolate(ok.data()[ok.trainrows(), ])
@@ -647,7 +674,7 @@ shinyServer(function(input, output, session) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
       data <- plot.data[, plotVar]
-    } else if (input$graphType %in% c("Color", "Camembert")) {
+    } else if (input$graphType %in% c("Color", "Camembert", "CatBarplot")) {
       if (is.null(input$plotVarOne)) return()
       plotVar <- input$plotVarOne
       data <- plot.data[, plotVar]
