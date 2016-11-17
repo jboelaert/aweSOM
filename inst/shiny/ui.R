@@ -86,6 +86,12 @@ shinyUI(fluidPage(
              fluidRow(column(4, 
                              ## Sélection du graphique et des variables
                              h4("Graph options"),
+                             fluidRow(column(4, p("Plot:")), 
+                                      column(8, selectInput("graphWhat", NULL, 
+                                                            choices= c("Map Information"= "MapInfo",
+                                                                       "Numeric Variables"= "Numeric",
+                                                                       "Categorical Variables"= "Categorical"), 
+                                                            selected= "MapInfo"))),
                              fluidRow(column(4, p("Graph type:")), 
                                       column(8, selectInput("graphType", NULL, 
                                                             choices= c("Superclass Dendrogram"= "Dendrogram",

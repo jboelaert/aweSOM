@@ -21,8 +21,6 @@
 * save R session
 * isolate train in graph var choice
 * isolate ok.data() in graph panel
-* Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D, et à cacher quand 0 obs
-* Names plot : enlever ?
 * Line plot empty cell : enlever cercles
 * Adjustable size for non-java plots
 * picture download faster
@@ -31,6 +29,10 @@
 * check that sqrt(weights) where weights sum to one is correct
 * Neighbour criterion (in dists): use unit.distances ?
 * check seed
+
+## Limbo
+* Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D, et à cacher quand 0 obs
+* Names plot : enlever ?
 
 ## Wishlist
 * serveur Strasbourg

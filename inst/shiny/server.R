@@ -4,6 +4,32 @@
 # library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
+################################################################################
+## Global Variables
+################################################################################
+
+## List of possible plots, by "what" type
+plotChoices <- list(MapInfo= c("Population map"= "Hitmap",
+                               # "Names"= "Names", 
+                               "Superclass Dendrogram"= "Dendrogram",
+                               "Superclass Scree plot"= "Screeplot",
+                               "Neighbour distance"= "UMatrix", 
+                               "Smooth distance"= "SmoothDist"), 
+                    Numeric= c("Radar"= "Radar", 
+                               "Barplot"= "Barplot", 
+                               "Boxplot"= "Boxplot",
+                               "Line"= "Line", 
+                               # "Star"= "Star", 
+                               "Heat"= "Color"), 
+                    Categorical= c("Pie"= "Camembert"))
+
+################################################################################
+## Global Functions
+################################################################################
+
+##########
+## Get plot colors from chosen palette
+##########
 getPalette <- function(pal, n, reverse= F) {
   if(pal == "grey") {
     res <- grey(1:n / n)
@@ -40,8 +66,9 @@ getPalette <- function(pal, n, reverse= F) {
 }
 
 
-############################
-## Fonction qui génère les paramètres à passer à JS
+##########
+## Generate parameters to pass to javascript plotting functions
+##########
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
                           normtype= c("range", "contrast"), palsc, palplot, 
                           cellNames, plotOutliers, reversePal, options= NULL) {
@@ -197,8 +224,10 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
 }
 
 
-#########################
-## Fonction principale serveur
+################################################################################
+## Main server function
+################################################################################
+
 shinyServer(function(input, output, session) {
   
   #############################################################################
@@ -514,6 +543,15 @@ shinyServer(function(input, output, session) {
   #############################################################################
   ## Panel "Graph"
   #############################################################################
+  
+  ## Update plot type choices on plot "what" selection
+  observe({
+    input$graphWhat
+    isolate({
+      if (is.null(ok.sc())) return(NULL)
+      updateSelectInput(session, "graphType", choices= plotChoices[[input$graphWhat]])
+    })
+  })
   
   ## Update max nb superclasses
   observe({
