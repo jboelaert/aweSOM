@@ -1,8 +1,7 @@
 ## 27/04/2016 : Shiny SOM
-
-library(kohonen)
-library(RColorBrewer)
-library(viridis)
+# library(kohonen)
+# library(RColorBrewer)
+# library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
 getPalette <- function(pal, n) {
@@ -149,6 +148,7 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$label <- unique.values
     res$labelColor <- getPalette(palplot, nvalues, reversePal)
     res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
+    # res$pieNormalizedSize <- rep(.9, length(clust.table))
     res$pieRealSize <- unname(clust.table)
     res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
                                              function(x) {
@@ -308,9 +308,9 @@ shinyServer(function(input, output, session) {
   # Update training radius on change of grid
   observe({
     if (is.null(ok.data())) return()
-    tmpgrid <- somgrid(input$kohDimx, input$kohDimy, input$kohTopo)
+    tmpgrid <- class::somgrid(input$kohDimx, input$kohDimy, input$kohTopo)
     tmpgrid$n.hood <- ifelse(input$kohTopo == "hexagonal", "circular", "square")
-    radius <- round(unname(quantile(unit.distances(tmpgrid, FALSE), .67)), 2)
+    radius <- round(unname(quantile(kohonen::unit.distances(tmpgrid, FALSE), .67)), 2)
     updateNumericInput(session, "trainRadius1", value= radius)
     updateNumericInput(session, "trainRadius2", value= -radius)
   })
@@ -418,9 +418,9 @@ shinyServer(function(input, output, session) {
           init <- base %*% t(data.pca$rotation)
         }
       } 
-      res <- som(dat, grid= somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
-                 rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
-                 radius= c(input$trainRadius1, input$trainRadius2, init= init))
+      res <- kohonen::som(dat, grid= class::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
+                          rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
+                          radius= c(input$trainRadius1, input$trainRadius2, init= init))
       ## save seed and set new
       res$seed <- input$trainSeed
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
@@ -458,7 +458,7 @@ shinyServer(function(input, output, session) {
   ok.dist <- reactive({
     if (is.null(ok.som())) return(NULL)
     # proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
-    proto.gridspace.dist <- unit.distances(ok.som()$grid, F)
+    proto.gridspace.dist <- kohonen::unit.distances(ok.som()$grid, F)
     proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
     neigh <- round(proto.gridspace.dist, 3) == 1
     proto.dataspace.dist.neigh <- proto.dataspace.dist
@@ -611,29 +611,31 @@ shinyServer(function(input, output, session) {
                                                           "Names", "UMatrix")))
       return(NULL) # si on n'a pas calculé, on donne NULL à JS
     
+    plot.data <- isolate(ok.data()[ok.trainrows(), ])
+    if(is.null(plot.data)) return(NULL)
     # Obs names per cell for message box
     if (is.null(input$plotNames)) return()
     if (input$plotNames == "(rownames)") {
-      plotNames.var <- rownames(ok.data()[ok.trainrows(), ])
+      plotNames.var <- rownames(plot.data)
     } else 
-      plotNames.var <- as.character(ok.data()[ok.trainrows(), input$plotNames])
+      plotNames.var <- as.character(plot.data[, input$plotNames])
     cellNames <- unname(lapply(split(plotNames.var, ok.clust()), 
                         function(x) paste(x, collapse= ", "))) # "&#13;&#10;" "<br />"
 
     if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot", "Line")) {
       if (is.null(input$plotVarMult)) return()
       plotVar <- input$plotVarMult
-      data <- ok.data()[ok.trainrows(), plotVar]
+      data <- plot.data[, plotVar]
     } else if (input$graphType %in% c("Color", "Camembert")) {
       if (is.null(input$plotVarOne)) return()
       plotVar <- input$plotVarOne
-      data <- ok.data()[ok.trainrows(), plotVar]
+      data <- plot.data[, plotVar]
     } else if (input$graphType %in% c("Hitmap")) {
       plotVar <- NULL
       data <- NULL
     } else if (input$graphType %in% c("Names")) {
       plotVar <- NULL
-      data <- as.character(ok.data()[ok.trainrows(), input$plotVarOne])
+      data <- as.character(plot.data[, input$plotVarOne])
     } else if (input$graphType == "UMatrix") {
       plotVar <- NULL
       proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
@@ -677,6 +679,26 @@ shinyServer(function(input, output, session) {
                         selected= c("rownames", "Superclass", "SOM.cell", colnames(ok.data())[1])))
   })
   
+  # Update choices for rownames column on button clicks
+  observe({
+    input$clustSelectNone
+    if (is.null(ok.sc())) return()
+    updateSelectInput(session, "clustVariables", selected= c("rownames", "Superclass", "SOM.cell"))
+  })
+  observe({
+    input$clustSelectTrain
+    if (is.null(ok.sc())) return()
+    updateSelectInput(session, "clustVariables", 
+                      selected= c("rownames", "Superclass", "SOM.cell", isolate(ok.trainvars())))
+  })
+  observe({
+    input$clustSelectAll
+    if (is.null(ok.sc())) return()
+    updateSelectInput(session, "clustVariables", 
+                      selected= c("rownames", "Superclass", "SOM.cell", isolate(colnames(ok.data()))))
+  })
+  
+
   # Current clustered data table
   ok.clustTable <- reactive({
     if (is.null(ok.sc()) | is.null(input$clustVariables)) return()

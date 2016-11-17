@@ -1,6 +1,5 @@
 ## 27/04/2016 : Shiny User Interface
-library(RColorBrewer)
-
+# library(RColorBrewer)
 
 ## Organisation de la page
 shinyUI(fluidPage(
@@ -165,6 +164,9 @@ shinyUI(fluidPage(
                column(4,
                       downloadButton("clustDownload", "Download (csv file)"),
                       h4("Selected variables"),
+                      fluidRow(column(4, actionButton("clustSelectNone", "Unselect all")), 
+                               column(4, actionButton("clustSelectTrain", "Select train")), 
+                               column(4, actionButton("clustSelectAll", "Select all"))),
                       uiOutput("clustVariables")),
                column(8, dataTableOutput("clustTable"))))
   )

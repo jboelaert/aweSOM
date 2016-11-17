@@ -3,6 +3,8 @@
 * Boxplot : download doesn't work well
 
 ## TODO
+* Clustered data : buttons select all, unselect all...
+* Pie : option toutes même taille
 * About panel
 * Hitmap fill polygon with palette
 * Square barplot to .95
@@ -32,8 +34,11 @@
 ## Check
 * check that sqrt(weights) where weights sum to one is correct
 * Neighbour criterion (in dists): use unit.distances ?
+* check seed
 
 ## Wishlist
+* 3d plots
+* intra-cell variance plot ?
 * File locale
 * Internationalization
 * SC graph options : none, background, foreground
