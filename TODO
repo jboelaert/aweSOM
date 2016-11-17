@@ -3,8 +3,6 @@
 * Boxplot : download doesn't work well
 
 ## TODO
-* Clustered data : buttons select all, unselect all...
-* Pie : option toutes même taille
 * About panel
 * Hitmap fill polygon with palette
 * Square barplot to .95
@@ -12,11 +10,9 @@
 * Warning that smooth is not exact for hexagon?
 * Boxplots & barplot : change geometry (fatter bars, square bar to max .95, bar 0 = 0...)
 * Help messages
-* camemberts : ajouter % dans le texte
 * hex grid on pca initialization ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
-* serveur Strasbourg
 * barplot categorical
 * Third contrast option : no normalization
 * Star categorical realValue (ex : frondeur 1.62)
@@ -37,6 +33,7 @@
 * check seed
 
 ## Wishlist
+* serveur Strasbourg
 * 3d plots
 * intra-cell variance plot ?
 * File locale

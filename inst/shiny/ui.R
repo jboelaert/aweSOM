@@ -135,7 +135,9 @@ shinyUI(fluidPage(
                                                           c("viridis", "grey", "rainbow", "heat", "terrain", 
                                                             "topo", "cm", rownames(brewer.pal.info)), 
                                                           "viridis"))), 
-                                              checkboxInput("plotRevPal", "Reverse palette")),
+                                              checkboxInput("plotRevPal", "Reverse palette"), 
+                                              conditionalPanel('input.graphType == "Camembert"', 
+                                                               checkboxInput("plotEqualSize", "Equal pie sizes", F))),
                              uiOutput("plotWarning")), 
                              
                       column(8, 

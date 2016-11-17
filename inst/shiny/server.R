@@ -4,25 +4,6 @@
 # library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
-getPalette <- function(pal, n) {
-  if1list <- function(x) { if (length(x) == 1) return(list(x)) ; x}
-  if(pal == "grey") return(if1list(grey(1:n / n)))
-  if(pal == "rainbow") return(if1list(substr(rainbow(n), 1, 7)))
-  if(pal == "heat") return(if1list(substr(heat.colors(n), 1, 7)))
-  if(pal == "terrain") return(if1list(substr(terrain.colors(n), 1, 7)))
-  if(pal == "topo") return(if1list(substr(topo.colors(n), 1, 7)))
-  if(pal == "cm") return(if1list(substr(cm.colors(n), 1, 7)))
-  if (pal == "viridis") {
-    if (n == 1) return(list(substr(viridis(3), 1, 7)[1]))
-    if (n == 2) return(substr(viridis(3), 1, 7)[c(1,3)])
-    return(substr(viridis(n), 1, 7))
-  } else {
-    if (n == 1) return(list(brewer.pal(3, pal)[1]))
-    if (n == 2) return(brewer.pal(3, pal)[c(1,3)])
-    return(brewer.pal(n, pal))
-  }
-}
-
 getPalette <- function(pal, n, reverse= F) {
   if(pal == "grey") {
     res <- grey(1:n / n)
@@ -63,7 +44,7 @@ getPalette <- function(pal, n, reverse= F) {
 ## Fonction qui génère les paramètres à passer à JS
 getPlotParams <- function(type, som, superclass, data, plotsize, varnames, 
                           normtype= c("range", "contrast"), palsc, palplot, 
-                          cellNames, plotOutliers, reversePal) {
+                          cellNames, plotOutliers, reversePal, options= NULL) {
   ## Paramètres communs à tous les graphiques
   somsize <- nrow(som$grid$pts)
   clustering <- factor(som$unit.classif, 1:nrow(som$grid$pts))
@@ -147,8 +128,10 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
     res$parts <- nvalues
     res$label <- unique.values
     res$labelColor <- getPalette(palplot, nvalues, reversePal)
-    res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
-    # res$pieNormalizedSize <- rep(.9, length(clust.table))
+    if (options$equalSize) {
+      res$pieNormalizedSize <- rep(.9, length(clust.table))
+    } else
+      res$pieNormalizedSize <- unname(.9 * sqrt(clust.table) / sqrt(max(clust.table)))
     res$pieRealSize <- unname(clust.table)
     res$pieNormalizedValues <- unname(lapply(split(data, clustering), 
                                              function(x) {
@@ -646,12 +629,13 @@ shinyServer(function(input, output, session) {
       plotVar <- "Mean distance to neighbours"
     }
     
+    options <- list(equalSize= input$plotEqualSize)
     contrast <- ifelse(input$contrast, "contrast", "range")
     graphType <- ifelse(input$graphType == "UMatrix", "Color", input$graphType)
     getPlotParams(graphType, ok.som(), ok.sc(), 
                   data, input$plotSize, plotVar, contrast, 
                   input$palsc, input$palplot, cellNames, 
-                  input$plotOutliers, input$plotRevPal)
+                  input$plotOutliers, input$plotRevPal, options)
   })
   
   ## Plot warning

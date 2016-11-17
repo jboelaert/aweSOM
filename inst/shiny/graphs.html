@@ -771,6 +771,7 @@ $.extend(theOutputBinding, {
     						arrayValues[j] = [];
     						arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
     						arrayValues[j].realValue = innerArrayRealValues[j];
+    						arrayValues[j].innerCellPop = cellPop[(n*nbColumns)+p];
     					}
     						
     					var pie = d3.layout.pie()
@@ -794,7 +795,8 @@ $.extend(theOutputBinding, {
               pieParts.on('mouseenter', function (d, i) {
                 d3.select('#plot-message').text(function () { 
                   var innerArrayRealValues = [];
-                  var ch=label[i]+": " + d.data.realValue;
+                  var ch=label[i]+": n= " + d.data.realValue + " (" + 
+    						    (100 * d.data.realValue / d.data.innerCellPop).toFixed(1) + "%)";
                   return ch;	
                 }); 	
               svg.selectAll("path.r"+i)
@@ -1411,12 +1413,13 @@ $.extend(theOutputBinding, {
     				
     				var innerArrayRealValues = [];
     				innerArrayRealValues= pieRealValues[n];
+
     				var arrayValues = [];
-    				
     				for(var j=0; j<parts; j++){
     					arrayValues[j] = [];
     					arrayValues[j].normalizedValue = innerArrayNormalizedValues[j]*cellSize;
     					arrayValues[j].realValue = innerArrayRealValues[j];
+    					arrayValues[j].innerCellPop = cellPop[n];
     				}
     
     				var pie = d3.layout.pie()
@@ -1439,7 +1442,8 @@ $.extend(theOutputBinding, {
     					
             pieParts.on('mouseenter', function (d, i) {
     					d3.select('#plot-message').text(function () { 
-    						var ch=label[i]+": " + d.data.realValue;
+    						var ch=label[i]+ ": n= " + d.data.realValue + " (" + 
+    						  (100 * d.data.realValue / d.data.innerCellPop).toFixed(1) + "%)";
     						return ch;	
     					});
   						svg.selectAll("path.r"+i)
