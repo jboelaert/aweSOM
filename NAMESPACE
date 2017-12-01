@@ -1,0 +1,12 @@
+## imports
+import(RColorBrewer)
+import(e1071)
+import(shiny)
+import(viridis)
+
+## exports
+# standard functions
+export(aweSOM)
+
+#useDynLib(SOMbrero)
+
