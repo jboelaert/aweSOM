@@ -453,11 +453,12 @@ shinyServer(function(input, output, session) {
           init <- base %*% t(data.pca$rotation)
         }
       } 
-      res <- kohonen::som(dat, grid= class::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
+      res <- kohonen::som(dat, grid= kohonen::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                           rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
-                          radius= c(input$trainRadius1, input$trainRadius2, init= init))
+                          radius= c(input$trainRadius1, input$trainRadius2), init= init)
       ## save seed and set new
       res$seed <- input$trainSeed
+      res$codes <- res$codes[[1]]
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
       
       res
@@ -476,7 +477,7 @@ shinyServer(function(input, output, session) {
   })
   ok.sc <- reactive({
     if(!is.null(ok.hclust()))
-      cutree(ok.hclust(), input$kohSuperclass)
+      unname(cutree(ok.hclust(), input$kohSuperclass))
   })
   
   ## Current training vars
