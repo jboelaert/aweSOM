@@ -1,6 +1,7 @@
 ## BUGS
 * Boxplot : highlight doesn't work for other cells
 * Boxplot : download doesn't work well
+* % explained variance ? (bad on unscaled canpool6)
 
 ## TODO
 * About panel
