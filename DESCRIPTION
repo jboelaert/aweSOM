@@ -1,10 +1,10 @@
 Package: aweSOM
-Title: aweSOM interactive Kohonen
-Version: 0.1
-Date: 2016-10-27
-Authors@R: c(person("Julien", "Boelaert", role= "aut", email="jubo.stats@gmail.com"))
-Author: Julien Boelaert
+Title: Interactive Kohonen Plots and Training
+Version: 0.2
+Date: 2017-07-25
+Author: Julien Boelaert, Mohamed Megdoud, Otmane Naji, Samuel Hym, Etienne Ollion
 Maintainer: Julien Boelaert <jubo.stats@gmail.com>
-Description: aweSOM interactive interface and plots for (Kohonen) self-organizing maps.
-Depends: R (>= 3.0), shiny, RColorBrewer, viridis, e1071
+Description: Interactive interface and plots for Kohonen self-organizing maps.
+Depends: R (>= 3.0)
+Imports: kohonen, shiny, RColorBrewer, viridis, e1071
 License: GPL (>= 2)

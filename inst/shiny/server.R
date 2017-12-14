@@ -1,7 +1,4 @@
 ## 27/04/2016 : Shiny SOM
-# library(kohonen)
-# library(RColorBrewer)
-# library(viridis)
 options(shiny.maxRequestSize=1024*1024^2) # Max filesize
 
 ################################################################################
@@ -46,18 +43,18 @@ getPalette <- function(pal, n, reverse= F) {
     res <- substr(cm.colors(n), 1, 7) 
   } else if (pal == "viridis") {
     if (n == 1) {
-      res <- substr(viridis(3), 1, 7)[1]
+      res <- substr(viridis::viridis(3), 1, 7)[1]
     } else if (n == 2) {
-      res <- substr(viridis(3), 1, 7)[c(1,3)]
+      res <- substr(viridis::viridis(3), 1, 7)[c(1,3)]
     } else 
-      res <- substr(viridis(n), 1, 7)
+      res <- substr(viridis::viridis(n), 1, 7)
   } else {
     if (n == 1) {
-      res <- brewer.pal(3, pal)[1]
+      res <- RColorBrewer::brewer.pal(3, pal)[1]
     } else if (n == 2) {
-      res <- brewer.pal(3, pal)[c(1,3)]
+      res <- RColorBrewer::brewer.pal(3, pal)[c(1,3)]
     } else 
-      res <- brewer.pal(n, pal)
+      res <- RColorBrewer::brewer.pal(n, pal)
   }
   if (length(res) == 1) 
     res <- list(res)
@@ -456,11 +453,12 @@ shinyServer(function(input, output, session) {
           init <- base %*% t(data.pca$rotation)
         }
       } 
-      res <- kohonen::som(dat, grid= class::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
+      res <- kohonen::som(dat, grid= kohonen::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                           rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
-                          radius= c(input$trainRadius1, input$trainRadius2, init= init))
+                          radius= c(input$trainRadius1, input$trainRadius2), init= init)
       ## save seed and set new
       res$seed <- input$trainSeed
+      res$codes <- res$codes[[1]]
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
       
       res
@@ -479,7 +477,7 @@ shinyServer(function(input, output, session) {
   })
   ok.sc <- reactive({
     if(!is.null(ok.hclust()))
-      cutree(ok.hclust(), input$kohSuperclass)
+      unname(cutree(ok.hclust(), input$kohSuperclass))
   })
   
   ## Current training vars
@@ -706,10 +704,10 @@ shinyServer(function(input, output, session) {
   ## Plot warning
   output$plotWarning <- renderText({
     if ( ! input$palsc %in% c("viridis", "grey", "rainbow", "heat", "terrain", "topo", "cm")) {
-      if (input$kohSuperclass > brewer.pal.info[input$palsc, "maxcolors"]) {
+      if (input$kohSuperclass > RColorBrewer::brewer.pal.info[input$palsc, "maxcolors"]) {
         return(paste0("WARNING: Palette ", input$palsc, 
                       " does not support more than ", 
-                      brewer.pal.info[input$palsc, "maxcolors"], " colors."))
+                      RColorBrewer::brewer.pal.info[input$palsc, "maxcolors"], " colors."))
       }
     }
     return(NULL)

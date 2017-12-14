@@ -5,7 +5,7 @@
 ## TODO
 * About panel
 * Hitmap fill polygon with palette
-* Square barplot to .95
+* Square barplot to .95 (also too large on CatBarplot with contrast)
 * better pix download filename
 * Warning that smooth is not exact for hexagon?
 * Boxplots & barplot : change geometry (fatter bars, square bar to max .95, bar 0 = 0...)
@@ -13,9 +13,7 @@
 * hex grid on pca initialization ?
 * Hitmap : mouse focus cell and polygon
 * Lines : changer le mécanisme de proximité
-* barplot categorical
 * Third contrast option : no normalization
-* Star categorical realValue (ex : frondeur 1.62)
 * Barplot hex norm : 0-1
 * SVG save
 * save R session
@@ -28,10 +26,10 @@
 ## Check
 * check that sqrt(weights) where weights sum to one is correct
 * Neighbour criterion (in dists): use unit.distances ?
-* check seed
 
 ## Limbo
 * Starplot : n'importe quoi, parfois les ~0 sont à l'exterieur des étoiles, problème grille 1D, et à cacher quand 0 obs
+* Star categorical realValue (ex : frondeur 1.62)
 * Names plot : enlever ?
 
 ## Wishlist
