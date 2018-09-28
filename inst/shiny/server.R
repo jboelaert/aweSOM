@@ -261,13 +261,19 @@ shinyServer(function(input, output, session) {
   ok.data <- reactive({
     if (is.null(input$dataFile))
       return(NULL)
-    the.sep <- switch(input$sep, "Comma ','"=",", "Semicolon ';'"=";", 
+    the.header <- switch(input$header, "Auto"= "auto", 
+                         "Header"= TRUE, "No Header"= FALSE)
+    the.sep <- switch(input$sep, "Auto"= "auto", 
+                      "Comma ','"=",", "Semicolon ';'"=";", 
                       "Tab"="\t", "Space"=" ")
-    the.quote <- switch(input$quote, "None"="","Double Quote \""='"',
-                        "Single Quote '"="'")
+    the.quote <- switch(input$quote, "None"= "",
+                        "Double Quote \""= '"',
+                        "Single Quote '"= "'")
     the.dec <- switch(input$dec, "Period '.'"=".", "Comma ','"=",")
-    data <- try(read.table(input$dataFile$datapath, header=input$header,
-                           sep=the.sep, quote=the.quote, dec=the.dec))
+    data <- try(data.frame(data.table::fread(input$dataFile$datapath, 
+                                             header=the.header, sep=the.sep, 
+                                             quote=the.quote, dec=the.dec, 
+                                             stringsAsFactors=T)))
     if(class(data) == "try-error") return(NULL)
     data
   })

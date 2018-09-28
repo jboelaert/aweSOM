@@ -3,7 +3,6 @@
 * Boxplot : download doesn't work well
 
 ## TODO
-* data import -> data.table::fread
 * About panel
 * Hitmap fill polygon with palette
 * Square barplot to .95 (also too large on CatBarplot with contrast)
