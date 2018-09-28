@@ -1,5 +1,5 @@
 ## 27/04/2016 : Shiny SOM
-options(shiny.maxRequestSize=1024*1024^2) # Max filesize
+options(shiny.maxRequestSize=2^30) # Max filesize
 
 ################################################################################
 ## Global Variables
@@ -455,10 +455,11 @@ shinyServer(function(input, output, session) {
       } 
       res <- kohonen::som(dat, grid= kohonen::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                           rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
-                          radius= c(input$trainRadius1, input$trainRadius2), init= init)
+                          radius= c(input$trainRadius1, input$trainRadius2), init= init, 
+                          dist.fcts= "sumofsquares")
+      res$codes <- res$codes[[1]] # Required after kohonen 3.0
       ## save seed and set new
       res$seed <- input$trainSeed
-      res$codes <- res$codes[[1]]
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
       
       res
