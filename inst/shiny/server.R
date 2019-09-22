@@ -774,4 +774,10 @@ shinyServer(function(input, output, session) {
   output$clustDownload <- 
     downloadHandler(filename= paste0("aweSOM-clust-", Sys.Date(), ".csv"), 
                     content= function(con) write.csv(ok.clustTable()[, colnames(ok.clustTable()) != "rownames"], con)) 
+  
+  # Download som object (rds)
+  output$somDownload <- 
+    downloadHandler(filename= paste0("aweSOM-som-", Sys.Date(), ".rds"), 
+                    content= function(con) saveRDS(ok.som(), con)) 
+  
 })

@@ -1,4 +1,5 @@
 ## BUGS
+* hex plots : wrong placement (cf kohonen package)
 * Boxplot : highlight doesn't work for other cells
 * Boxplot : download doesn't work well
 
@@ -6,6 +7,7 @@
 * About panel
 * Hitmap fill polygon with palette
 * Square barplot to .95 (also too large on CatBarplot with contrast)
+* Square? barplot enhanced contrast
 * better pix download filename
 * Warning that smooth is not exact for hexagon?
 * Boxplots & barplot : change geometry (fatter bars, square bar to max .95, bar 0 = 0...)
