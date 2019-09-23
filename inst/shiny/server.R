@@ -463,7 +463,6 @@ shinyServer(function(input, output, session) {
                           rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
                           radius= c(input$trainRadius1, input$trainRadius2), init= init, 
                           dist.fcts= "sumofsquares")
-      res$codes <- res$codes[[1]] # Required after kohonen 3.0
       ## save seed and set new
       res$seed <- input$trainSeed
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
@@ -480,7 +479,7 @@ shinyServer(function(input, output, session) {
   ## Compute superclasses when ok.som or superclass changes
   ok.hclust <- reactive({
     if(!is.null(ok.som()))
-      hclust(dist(ok.som()$codes), "ward.D2")
+      hclust(dist(ok.som()$codes[[1]]), "ward.D2")
   })
   ok.sc <- reactive({
     if(!is.null(ok.hclust()))
@@ -502,7 +501,7 @@ shinyServer(function(input, output, session) {
     if (is.null(ok.som())) return(NULL)
     # proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
     proto.gridspace.dist <- kohonen::unit.distances(ok.som()$grid, F)
-    proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
+    proto.dataspace.dist <- as.matrix(dist(ok.som()$codes[[1]]))
     neigh <- round(proto.gridspace.dist, 3) == 1
     proto.dataspace.dist.neigh <- proto.dataspace.dist
     proto.dataspace.dist.neigh[!neigh] <- NA
@@ -518,7 +517,7 @@ shinyServer(function(input, output, session) {
       traindat <- ok.traindat()$dat
       ## BMU, Squared distance from obs to BMU
       bmu <- ok.som()$unit.classif
-      sqdist <- rowSums((traindat - ok.som()$codes[bmu, ])^2)
+      sqdist <- rowSums((traindat - ok.som()$codes[[1]][bmu, ])^2)
       
       ## Quantization error
       err.quant <- mean(sqdist)
@@ -530,7 +529,7 @@ shinyServer(function(input, output, session) {
       
       ## Topographic error
       bmu2 <- apply(traindat, 1, function(row) {
-        dist <- colSums((t(ok.som()$codes) - row)^2)
+        dist <- colSums((t(ok.som()$codes[[1]]) - row)^2)
         order(dist)[2]
       })
       err.topo <- mean(!ok.dist()$neigh.matrix[cbind(bmu, bmu2)])
@@ -630,15 +629,15 @@ shinyServer(function(input, output, session) {
   ## Scree plot
   output$plotScreeplot <- renderPlot({
     if (is.null(ok.som())) return()
-    ncells <- nrow(ok.som()$codes)
+    ncells <- nrow(ok.som()$codes[[1]])
     nvalues <- max(input$kohSuperclass, min(ncells, max(ceiling(sqrt(ncells)), 10)))
     clust.var <- sapply(1:nvalues, function(k) {
       clust <- cutree(ok.hclust(), k)
-      clust.means <- do.call(rbind, by(ok.som()$codes, clust, colMeans))[clust, ]
-      mean(rowSums((ok.som()$codes - clust.means)^2))
+      clust.means <- do.call(rbind, by(ok.som()$codes[[1]], clust, colMeans))[clust, ]
+      mean(rowSums((ok.som()$codes[[1]] - clust.means)^2))
     })
     unexpl <- 100 * round(clust.var / 
-                            (sum(apply(ok.som()$codes, 2, var)) * (ncells - 1) / ncells), 3)
+                            (sum(apply(ok.som()$codes[[1]], 2, var)) * (ncells - 1) / ncells), 3)
     plot(unexpl, t= "b", ylim= c(0, 100),
          xlab= "Nb. Superclasses", ylab= "% Unexpl. Variance")
     grid()                      
@@ -692,7 +691,7 @@ shinyServer(function(input, output, session) {
     } else if (input$graphType == "UMatrix") {
       plotVar <- NULL
       proto.gridspace.dist <- as.matrix(dist(ok.som()$grid$pts))
-      proto.dataspace.dist <- as.matrix(dist(ok.som()$codes))
+      proto.dataspace.dist <- as.matrix(dist(ok.som()$codes[[1]]))
       proto.dataspace.dist[round(proto.gridspace.dist, 3) > 1] <- NA
       proto.dataspace.dist[proto.gridspace.dist == 0] <- NA
       data <- rowMeans(proto.dataspace.dist, na.rm= T)[ok.clust()]
