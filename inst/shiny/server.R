@@ -609,7 +609,7 @@ shinyServer(function(input, output, session) {
     })
   })
   output$plotNames <- renderUI({
-    if (is.null(ok.som())) return(NULL)
+    if (is.null(ok.data())) return(NULL)
     isolate({
       tmp.numeric <- sapply(ok.data(), is.numeric)
       fluidRow(column(4, p("Observation names:")), 
@@ -672,7 +672,7 @@ shinyServer(function(input, output, session) {
     } else 
       plotNames.var <- as.character(plot.data[, input$plotNames])
     cellNames <- unname(lapply(split(plotNames.var, ok.clust()), 
-                        function(x) paste(x, collapse= ", "))) # "&#13;&#10;" "<br />"
+                        function(x) paste(sort(x), collapse= ", "))) # "&#13;&#10;" "<br />"
 
     if (input$graphType %in% c("Radar", "Star", "Barplot", "Boxplot", "Line")) {
       if (is.null(input$plotVarMult)) return()
