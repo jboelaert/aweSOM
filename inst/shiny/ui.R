@@ -47,7 +47,7 @@ shinyUI(fluidPage(
                         )),
                column(8, 
                       uiOutput("dataImportMessage"), 
-                      dataTableOutput("dataView")))),
+                      DT::dataTableOutput("dataView")))),
     tabPanel("Train", 
              wellPanel(fluidRow(column(2, h3("Map info:")),
                                 column(10, verbatimTextOutput("Message")))),
@@ -77,10 +77,11 @@ shinyUI(fluidPage(
                                            column(4, numericInput("trainRadius1", NULL, .05, 1e-6, 1e3)), 
                                            column(4, numericInput("trainRadius2", NULL, .05, 1e-6, 1e3))), 
                                   fluidRow(column(4, p("Random seed:")), 
-                                           column(8, numericInput("trainSeed", NULL, sample(1e5, 1), 1, 1e9))))), 
-                 wellPanel(
-                   h3("Import SOM:"),
-                   fileInput("importmapbutton", "Import (RDS)"))),
+                                           column(8, numericInput("trainSeed", NULL, sample(1e5, 1), 1, 1e9)))))), 
+                 
+                 # wellPanel(
+                 #   h3("Import SOM:"),
+                 #   fileInput("importmapbutton", "Import (RDS)"))),
                column(8, 
                       h3("Training variables:"),
                       fluidRow(column(4, actionButton("varNum", "Select numeric variables")), 
@@ -108,7 +109,8 @@ shinyUI(fluidPage(
                                                                        "Superclass Dendrogram"= "Dendrogram",
                                                                        "Superclass Scree plot"= "Screeplot",
                                                                        "Neighbour distance"= "UMatrix", 
-                                                                       "Smooth distance"= "SmoothDist"), 
+                                                                       "Smooth distance"= "SmoothDist", 
+                                                                       "Abstraction"= "Abstraction"), 
                                                             selected= "Hitmap"))),
                              conditionalPanel('input.graphType == "Camembert" | input.graphType == "CatBarplot" | input.graphType == "Color" | input.graphType == "Names"', 
                                               uiOutput("plotVarOne")),
@@ -118,7 +120,7 @@ shinyUI(fluidPage(
                                                      'input.graphType == "Boxplot" | ', 
                                                      'input.graphType == "Star"'), 
                                               uiOutput("plotVarMult")),
-                             conditionalPanel('input.graphType != "Dendrogram" & input.graphType != "Screeplot" & input.graphType != "SmoothDist"',
+                             conditionalPanel('input.graphType != "Dendrogram" & input.graphType != "Screeplot" & input.graphType != "SmoothDist" & input.graphType != "Abstraction"',
                                               uiOutput("plotNames")),
                              checkboxInput("plotAdvanced", "Advanced options", F),
                              conditionalPanel("input.plotAdvanced", 
@@ -146,7 +148,10 @@ shinyUI(fluidPage(
                                                           "viridis"))), 
                                               checkboxInput("plotRevPal", "Reverse palette"), 
                                               conditionalPanel('input.graphType == "Camembert"', 
-                                                               checkboxInput("plotEqualSize", "Equal pie sizes", F))),
+                                                               checkboxInput("plotEqualSize", "Equal pie sizes", F)), 
+                                              conditionalPanel('input.graphType == "Abstraction"', 
+                                                               numericInput("plotAbstrCutoff", "Links cut-off", 
+                                                                            min= 0, max= 1, step = .01, value= 0))),
                              uiOutput("plotWarning")), 
                              
                       column(8, 
@@ -161,7 +166,11 @@ shinyUI(fluidPage(
                                               plotOutput("plotScreeplot")),
                              conditionalPanel('input.graphType == "SmoothDist"', 
                                               plotOutput("plotSmoothDist")),
-                             conditionalPanel('input.graphType != "Dendrogram" & input.graphType != "Screeplot" & input.graphType != "SmoothDist"', 
+                             conditionalPanel('input.graphType == "Abstraction"', 
+                                              plotOutput("plotAbstraction")),
+                                              # plotly::plotlyOutput("plotAbstraction")),
+                             
+                             conditionalPanel('input.graphType != "Dendrogram" & input.graphType != "Screeplot" & input.graphType != "SmoothDist" & input.graphType != "Abstraction"', 
                                               includeHTML("graphs.html"), 
                                               HTML('<h4 id="cell-info">Hover over the plot for information.</h4>'),
                                               HTML('<h4 id="plot-message">-</h4>'),
@@ -183,6 +192,6 @@ shinyUI(fluidPage(
                                column(4, actionButton("clustSelectTrain", "Select train")), 
                                column(4, actionButton("clustSelectAll", "Select all"))),
                       uiOutput("clustVariables")),
-               column(8, dataTableOutput("clustTable"))))
+               column(8, DT::dataTableOutput("clustTable"))))
   )
 ))

@@ -5,7 +5,7 @@
 
 ## TODO
 * About panel
-* Hitmap fill polygon with palette
+* Hitmap fill polygon with palette ; make area proportional to numbers (pas côté)!!
 * Square barplot to .95 (also too large on CatBarplot with contrast)
 * Square? barplot enhanced contrast
 * better pix download filename
@@ -35,6 +35,7 @@
 * Names plot : enlever ?
 
 ## Wishlist
+* possibility to flip & rotate map
 * serveur Strasbourg
 * 3d plots
 * intra-cell variance plot ?

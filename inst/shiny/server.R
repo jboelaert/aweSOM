@@ -1,6 +1,7 @@
 ## 27/04/2016 : Shiny SOM
 options(shiny.maxRequestSize=2^30) # Max filesize
 
+
 ################################################################################
 ## Global Variables
 ################################################################################
@@ -11,7 +12,8 @@ plotChoices <- list(MapInfo= c("Population map"= "Hitmap",
                                "Superclass Dendrogram"= "Dendrogram",
                                "Superclass Scree plot"= "Screeplot",
                                "Neighbour distance"= "UMatrix", 
-                               "Smooth distance"= "SmoothDist"), 
+                               "Smooth distance"= "SmoothDist", 
+                               "Abstraction"= "Abstraction"), 
                     Numeric= c("Radar"= "Radar", 
                                "Barplot"= "Barplot", 
                                "Boxplot"= "Boxplot",
@@ -279,13 +281,13 @@ shinyServer(function(input, output, session) {
   })
   
   # data preview table
-  output$dataView <- renderDataTable({
+  output$dataView <- DT::renderDataTable({
     d.input <- ok.data()
-    if (is.null(d.input)) 
+    if (is.null(d.input))
       return(NULL)
-    data.frame(rownames= rownames(ok.data()), d.input)
+    data.frame(rownames= rownames(d.input), d.input)
   })
-  
+
   # data import message
   output$dataImportMessage <- renderUI({
     if (is.null(input$dataFile)) 
@@ -652,6 +654,145 @@ shinyServer(function(input, output, session) {
                    values[, ok.som()$grid$xdim:1], 
                    color.palette= function(x) paste0(getPalette(input$palplot, x, input$plotRevPal), "FF"))
   })
+
+  ## Abstraction plot
+  output$plotAbstraction <- renderPlot({
+    if (is.null(ok.som())) return()
+
+    somcodes <- ok.som()$codes[[1]]
+    nsomvars <- ncol(somcodes)
+    nsomnodes <- nrow(somcodes)
+    gridpoints <- ok.som()$grid$pts
+
+    nodeweights <- apply(somcodes, 2, function(x) {
+      y <- (x - min(x)) / (max(x) - min(x))
+      y^2 / sum(y^2)
+      # exp(3 * y) / sum(exp(3 * y))
+    })
+    varcoords <- t(nodeweights) %*% gridpoints
+
+    adjweights <- aggregate(.~somcell, FUN = function(x) sum(x - min(0, min(x))),
+                            na.action= na.pass,
+                            data.frame(ok.traindat()$dat, 
+                                       somcell= ok.som()$unit.classif))
+    if (any(! 1:nrow(gridpoints) %in% ok.som()$unit.classif)) {
+      losers <- which(!(1:nrow(gridpoints) %in% ok.som()$unit.classif))
+      for (ilose in losers) {
+        darow <- as.data.frame(t(c(ilose, rep(0, ncol(ok.traindat()$dat)))))
+        colnames(darow) <- colnames(adjweights)
+        if (ilose == 1) {
+          adjweights <- rbind(darow, adjweights)
+        } else
+          adjweights <- rbind(adjweights[1:(ilose-1), ], 
+                              darow, 
+                              adjweights[ilose:(nrow(adjweights)), ])
+      }
+    }
+    adjweights <- as.matrix(apply(adjweights[, -1], 2, function(y) y^2 / sum(y^2)))
+    adjcoords <- t(adjweights) %*% gridpoints
+    adjweightscut <- adjweights
+    adjweightscut[adjweights < input$plotAbstrCutoff] <- 0
+
+    vargraph <- igraph::graph_from_adjacency_matrix(crossprod(nodeweights),
+                                                    "undirected", diag= F, weighted= T)
+    vargraph.louvain <- igraph::communities(igraph::cluster_louvain(vargraph))
+    varclust <- sapply(colnames(nodeweights),
+                       function(x) for (i in 1:length(vargraph.louvain))
+                         if (x %in% vargraph.louvain[[i]]) return(i))
+    dacolors <- unlist(getPalette(input$palplot, length(unique(varclust)), input$plotRevPal)[varclust])
+
+    gg <- ggplot2::ggplot(data.frame(as.data.frame(gridpoints),
+                                     pop= as.vector(table(factor(ok.som()$unit.classif,
+                                                                 levels = 1:nsomnodes)))),
+                    ggplot2::aes(x, y)) + ggplot2::scale_y_reverse() +
+      ggplot2::theme_void() + 
+      ggforce::geom_circle(ggplot2::aes(r= .1 + .4 * (sqrt(pop) - min(sqrt(pop))) / (max(sqrt(pop)) - min(sqrt(pop))), 
+                                        x0= x, y0= y), fill= "white", 
+                           show.legend = F, inherit.aes = F) +
+      ggplot2::geom_segment(mapping= ggplot2::aes(x, y, xend= xend, yend= yend,
+                                                  color= dacolor, linetype= datype,
+                                                  size= daweight, alpha= daweight),
+                            inherit.aes = F, show.legend = F,
+                            data= data.frame(x= rep(gridpoints[, 1], each= nsomvars),
+                                             y= rep(gridpoints[, 2], each= nsomvars),
+                                             xend= rep(adjcoords[, 1], times= nsomnodes),
+                                             yend= rep(adjcoords[, 2], times= nsomnodes),
+                                             dacolor= rep(dacolors, times= nsomnodes),
+                                             datype= rep(colnames(somcodes), times= nsomnodes),
+                                             daweight= as.vector(t(adjweightscut)))[t(adjweightscut) != 0, ]) +
+      ggplot2::geom_point(ggplot2::aes(color= dacolors),
+                          data= as.data.frame(adjcoords, dacolors),
+                          size= 3, pch= 24, show.legend = F) +
+      ggrepel::geom_label_repel(ggplot2::aes(color= dacolors, label= activite,
+                                             size= taille, x= x, y= y),
+                                inherit.aes = F, show.legend = F,
+                                data= data.frame(adjcoords, dacolors,
+                                                 activite= rownames(adjcoords),
+                                                 taille= 2* (1 - colSums(adjweights^2)))) +
+      ggplot2::coord_fixed()
+    print(gg)
+  })
+  
+  # output$plotAbstraction <- plotly::renderPlotly({
+  #   if (is.null(ok.som())) return()
+  #   
+  #   somcodes <- ok.som()$codes[[1]]
+  #   nsomvars <- ncol(somcodes)
+  #   nsomnodes <- nrow(somcodes)
+  #   gridpoints <- ok.som()$grid$pts
+  #   
+  #   nodeweights <- apply(somcodes, 2, function(x) {
+  #     y <- (x - min(x)) / (max(x) - min(x))
+  #     y^2 / sum(y^2)
+  #   })
+  #   varcoords <- t(nodeweights) %*% gridpoints
+  #   
+  #   adjweights <- aggregate(.~somcell, FUN = sum, 
+  #                           data.frame(dep[, colnames(somcodes)], 
+  #                                      somcell= ok.som()$unit.classif))
+  #   adjweights <- as.matrix(apply(adjweights[, -1], 2, function(y) y^2 / sum(y^2)))
+  #   adjcoords <- t(adjweights) %*% gridpoints
+  #   adjweightscut <- adjweights
+  #   adjweightscut[adjweights <= input$plotAbstrCutoff] <- 0
+  #   
+  #   vargraph <- igraph::graph_from_adjacency_matrix(crossprod(nodeweights), 
+  #                                                   "undirected", diag= F, weighted= T)
+  #   vargraph.louvain <- igraph::communities(igraph::cluster_louvain(vargraph))
+  #   varclust <- sapply(colnames(nodeweights), 
+  #                      function(x) for (i in 1:length(vargraph.louvain)) 
+  #                        if (x %in% vargraph.louvain[[i]]) return(i))
+  #   # varclust <- as.character(varclust)
+  #   
+  #   
+  #   #########
+  #   lygraphpoints <- rbind(gridpoints, adjcoords)
+  #   dagraph <- plot_ly(x= ~lygraphpoints[, 1], y= ~lygraphpoints[, 2], 
+  #                      mode= "markers", hoverinfo = "text",  
+  #                      text= c(paste0("Cell ", 1:nsomnodes), colnames(somcodes)))
+  # 
+  #   dashapes = data.frame(
+  #     type = "line",
+  #     color = rep(getPalette(input$palplot, length(unique(varclust)), 
+  #                            reverse= input$plotRevPal)[varclust], times= nsomnodes),
+  #     width = 10 * as.vector(t(adjweightscut)),
+  #     # width = 10 * as.vector(t(adjweights)),
+  #     x0 = rep(gridpoints[, 1], each= nsomvars),
+  #     y0 = rep(gridpoints[, 2], each= nsomvars),
+  #     x1 = rep(adjcoords[, 1], times= nsomnodes),
+  #     y1 = rep(adjcoords[, 2], times= nsomnodes)
+  #   )
+  #   dashapes$line <- apply(dashapes[, c("color", "width")], 1, as.list)
+  #   dashapes <- apply(dashapes[, !grepl("color|width", colnames(dashapes))], 1, as.list)
+  #   
+  #   
+  #   lyaxis <- list(title = "", showgrid = FALSE, 
+  #                  showticklabels = FALSE, zeroline = FALSE)
+  #   plotly::layout(dagraph, title = 'aweSOM Abstraction',
+  #                  shapes = dashapes, xaxis = axis, yaxis = axis)
+  # 
+  # })
+  # 
+  
   
   ## Fancy JS Plots
   output$thePlot <- reactive({
@@ -767,7 +908,7 @@ shinyServer(function(input, output, session) {
   })
 
   # Display clustered data  
-  output$clustTable <- renderDataTable(ok.clustTable())
+  output$clustTable <- DT::renderDataTable(ok.clustTable())
 
   # Download clustered data
   output$clustDownload <- 
