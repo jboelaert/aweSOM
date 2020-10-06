@@ -255,6 +255,8 @@ getPlotParams <- function(type, som, superclass, data, plotsize, varnames,
 
 shinyServer(function(input, output, session) {
   
+  values <- reactiveValues()
+  
   #############################################################################
   ## Panel "Import Data"
   #############################################################################
@@ -277,6 +279,13 @@ shinyServer(function(input, output, session) {
                                              quote=the.quote, dec=the.dec, 
                                              stringsAsFactors=T)))
     if(class(data) == "try-error") return(NULL)
+    values$codetxt$dataread <- paste0("ok.data <- data.table::fread('", 
+                                      input$dataFile$name, "', ",
+                                      "header = '", the.header, 
+                                      "', sep ='", the.sep, 
+                                      "', quote = '", the.quote, ## TODO: handle quotes
+                                      "', dec = '", the.dec, 
+                                      "', stringsAsFactors = ", T, ")\n")
     data
   })
   
@@ -364,7 +373,8 @@ shinyServer(function(input, output, session) {
     isolate({
       if (is.null(ok.data())) return(NULL)
       err.msg <- NULL
-      
+      codeTxt <- list()
+
       # Get selected variables with non-zero weight
       varSelected <- as.logical(sapply(paste0("trainVarChoice", colnames(ok.data())), 
                                        function(var) input[[var]]))
@@ -375,6 +385,13 @@ shinyServer(function(input, output, session) {
         return(list(dat= NULL, msg= "Select at least two variables (with non-zero weight)."))
       dat <- ok.data()[, varSelected]
       varWeights <- varWeights[varSelected]
+      codeTxt$sel <- paste0("dat <- ok.data[, c('", paste(colnames(ok.data())[varSelected], collapse= "', '"), "')]\n",
+                            if (any(varWeights != 1)) {
+                              paste0("varWeights <- c(", 
+                                     paste(colnames(ok.data())[varSelected], 
+                                           " = ", varWeights, collapse= ", "), 
+                                     ")\n")
+                            })
       
       # Check that all variables are numeric, otherwise message and convert
       varNumeric <- sapply(dat, is.numeric)
@@ -384,6 +401,8 @@ shinyServer(function(input, output, session) {
                                   " > are not natively numeric, and will be forced to numeric.",
                                   " (This is probably a bad idea.)")
         dat[, !varNumeric] <- as.data.frame(sapply(dat[, !varNumeric], as.numeric))
+        codeTxt$numeric <- paste0("varNumeric <- sapply(dat, is.numeric)\n", 
+                                  "dat[, !varNumeric] <- as.data.frame(sapply(dat[, !varNumeric], as.numeric))\n")
       }
       
       # Remove NAs
@@ -392,6 +411,7 @@ shinyServer(function(input, output, session) {
       if (nrow(dat) < nrow.withNA) {
         err.msg$NArows <- paste(nrow.withNA - nrow(dat), 
                                 "observations contained missing values, and were removed.")
+        codeTxt$NArows <- "dat <- as.matrix(na.omit(dat))\n"
       }
       if (nrow(dat) == 0) {
         err.msg$NArows <- "All observations contain missing values, training impossible."
@@ -408,6 +428,9 @@ shinyServer(function(input, output, session) {
                                   " > are constant, and will be removed for training.")
         dat <- dat[, !varConstant]
         varWeights <- varWeights[!varConstant]
+        codeTxt$constant <- paste0("varConstant <- apply(dat, 2, sd, na.rm= T) == 0\n", 
+                                  "dat <- dat[, !varConstant]\n", 
+                                  if (any(varWeights != 1)) paste0("varWeights <- varWeights[!varConstant]\n"))
         if (sum(!varConstant) < 2) {
           err.msg$allconstant <- "Less than two selected non-constant variables, training impossible."
           return(list(dat= NULL, msg= err.msg))
@@ -418,7 +441,24 @@ shinyServer(function(input, output, session) {
       if (input$trainscale) dat <- scale(dat)
       varWeights <- length(varWeights) * varWeights / sum(varWeights)
       dat <- t(sqrt(varWeights) * t(dat))
-      
+      codeTxt$scale <- paste0(ifelse(input$trainscale, "dat <- scale(dat)\n", ""), 
+                              if (any(varWeights != 1)) paste0("varWeights <- length(varWeights) * varWeights / sum(varWeights)\n", 
+                                                               "dat <- t(sqrt(varWeights) * t(dat))\n"))
+
+      values$codetxt$traindat <- paste0(codeTxt$sel, 
+                                        if (! is.null(codeTxt$numeric)) {
+                                          paste0("# Warning: ", err.msg$numeric, "\n", 
+                                                 codeTxt$numeric)
+                                        },
+                                        if (! is.null(codeTxt$NArows)) {
+                                          paste0("# Warning: ", err.msg$NArows, "\n", 
+                                                 codeTxt$NArows)
+                                        },
+                                        if (! is.null(codeTxt$constant)) {
+                                          paste0("# Warning: ", err.msg$constant, "\n", 
+                                                 codeTxt$constant)
+                                        },
+                                        codeTxt$scale)
       list(dat= dat, msg= err.msg)
     })
   })
@@ -427,11 +467,16 @@ shinyServer(function(input, output, session) {
   ok.som <- reactive({
     dat <- ok.traindat()$dat
     if (is.null(dat)) return(NULL)
+    codeTxt <- list()
     isolate({
       ## Initialization
       set.seed(input$trainSeed)
+      codeTxt$seed <- paste0("set.seed(", input$trainSeed, ")\n")
       if (input$kohInit == "random") {
         init <- dat[sample(nrow(dat), input$kohDimx * input$kohDimy, replace= T), ]
+        codeTxt$init <- paste0("init <- dat[sample(nrow(dat), ", 
+                               input$kohDimx, " * ", input$kohDimy, 
+                               ", replace= T), ]\n")
       } else if (input$kohInit %in% c("pca.sample", "pca")) {
         # the most detailed grid axis is assigned to the first component
         if (input$kohDimx >= input$kohDimy) {
@@ -450,21 +495,45 @@ shinyServer(function(input, output, session) {
                  to= quantile(data.pca$x[,y.ev], .975),
                  length.out= input$kohDimy)
         base <- as.matrix(expand.grid(x=x, y=y))
+        codeTxt$init <- paste0("data.pca <- prcomp(dat, center= F, scale.= F)\n",
+                               "x <- seq(from= quantile(data.pca$x[,", x.ev, "], .025), to= quantile(data.pca$x[,", x.ev, "], .975), length.out= ", input$kohDimx, ")\n",
+                               "y <- seq(from= quantile(data.pca$x[,", y.ev, "], .025), to= quantile(data.pca$x[,", y.ev, "], .975), length.out= ", input$kohDimy, ")\n",
+                               "base <- as.matrix(expand.grid(x=x, y=y))\n")
+        
         if (input$kohInit == "pca.sample") {
           ## As in SOMbrero, init to observations closest to a 2D PCA grid
           closest.obs <- apply(base, 1, function(point) 
             which.min(colSums((t(data.pca$x[,c(x.ev,y.ev)])-point)^2)))
           init <- dat[closest.obs,]
+          codeTxt$init <- paste0(codeTxt$init, 
+                                 "closest.obs <- apply(base, 1, function(point) which.min(colSums((t(data.pca$x[,c(", x.ev, ", ", y.ev, ")])-point)^2)))\n",
+                                 "init <- dat[closest.obs,]\n")
         } else if (input$kohInit == "pca") {
           ## Pure PCA grid
           base <- cbind(base, matrix(0, nrow(base))[, rep(1, ncol(data.pca$x) - 2)])
           init <- base %*% t(data.pca$rotation)
+          codeTxt$init <- paste0(codeTxt$init, 
+                                 "base <- cbind(base, matrix(0, nrow(base))[, rep(1, ncol(data.pca$x) - 2)])\n", 
+                                 "init <- base %*% t(data.pca$rotation)\n")
         }
       } 
       res <- kohonen::som(dat, grid= kohonen::somgrid(input$kohDimx, input$kohDimy, input$kohTopo), 
                           rlen= input$trainRlen, alpha= c(input$trainAlpha1, input$trainAlpha2), 
                           radius= c(input$trainRadius1, input$trainRadius2), init= init, 
                           dist.fcts= "sumofsquares")
+      codeTxt$som <- paste0("ok.som <- kohonen::som(dat, grid= kohonen::somgrid(", 
+                            input$kohDimx, ", ", input$kohDimy, ", '", 
+                            input$kohTopo, "'), rlen= ", input$trainRlen, 
+                            ", alpha= c(", input$trainAlpha1, ", ", 
+                            input$trainAlpha2, "), radius= c(", 
+                            input$trainRadius1, ",", input$trainRadius2, 
+                            "), init= init, dist.fcts= 'sumofsquares')")
+      values$codetxt$trainsom <- paste0("### RNG Seed (for reproducibility)\n", 
+                                        codeTxt$seed,
+                                        "### Initialization\n", 
+                                        codeTxt$init, 
+                                        "### Training\n", 
+                                        codeTxt$som)
       ## save seed and set new
       res$seed <- input$trainSeed
       updateNumericInput(session, "trainSeed", value= sample(1e5, 1))
@@ -920,4 +989,19 @@ shinyServer(function(input, output, session) {
     downloadHandler(filename= paste0("aweSOM-som-", Sys.Date(), ".rds"), 
                     content= function(con) saveRDS(ok.som(), con)) 
   
+  
+  #############################################################################
+  ## Panel "Reproducible code"
+  #############################################################################
+  
+  output$codeTxt <- renderText({
+    paste0("## Import Data\n", 
+           values$codetxt$dataread, 
+           "\n## Build training data\n", 
+           values$codetxt$traindat, 
+           "\n## Train SOM\n", 
+           values$codetxt$trainsom)
+  })
+  
 })
+

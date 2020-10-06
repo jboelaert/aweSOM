@@ -192,6 +192,8 @@ shinyUI(fluidPage(
                                column(4, actionButton("clustSelectTrain", "Select train")), 
                                column(4, actionButton("clustSelectAll", "Select all"))),
                       uiOutput("clustVariables")),
-               column(8, DT::dataTableOutput("clustTable"))))
+               column(8, DT::dataTableOutput("clustTable")))), 
+    tabPanel("Reproducible code", 
+             verbatimTextOutput("codeTxt"))
   )
 ))
